@@ -1,0 +1,7 @@
+.vscode/
+mock/
+tasks/
+tmp/
+
+*.md
+!README.md

@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Daily Akari Tracker（非公式）</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1f262f;
+      --line: #2a313a;
+      --text: #f0f3f6;
+      --accent: #79c0ff;
+      --gold: #f2c94c;
+      --lamp-p: #e3b341;
+      --lamp-c: #2ea043;
+      --warn: #ff7b72;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.75 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+    }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 28px 16px 64px;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.3;
+      letter-spacing: .01em;
+    }
+
+    h2 {
+      margin: 40px 0 12px;
+      padding-bottom: 6px;
+      font-size: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 15.5px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 12px;
+      padding-left: 1.4em;
+    }
+
+    li+li {
+      margin-top: 4px;
+    }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--surface2);
+      font: 13.5px/1.5 ui-monospace, Consolas, monospace;
+    }
+
+    b,
+    strong {
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 700;
+      vertical-align: 4px;
+    }
+
+    .lead {
+      margin-top: 12px;
+      font-size: 16px;
+    }
+
+    .feat {
+      display: grid;
+      gap: 8px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .feat li {
+      margin: 0;
+      padding: 10px 12px 10px 14px;
+      border-left: 3px solid var(--c);
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .box {
+      margin: 12px 0 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      height: 108px;
+      padding: 10px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font: 12.5px/1.5 ui-monospace, Consolas, monospace;
+      word-break: break-all;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button,
+    .drag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface2);
+      color: var(--text);
+      font: inherit;
+      font-size: 14.5px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--text);
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .drag {
+      border-style: dashed;
+      border-color: var(--accent);
+      color: var(--accent);
+      cursor: grab;
+    }
+
+    .msg {
+      font-size: 13.5px;
+      color: var(--lamp-c);
+      font-weight: 700;
+    }
+
+    .note {
+      margin: 12px 0;
+      padding: 10px 12px;
+      border-left: 3px solid var(--gold);
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+    }
+
+    .note.warn {
+      border-left-color: var(--warn);
+    }
+
+    ol.steps>li {
+      margin-top: 8px;
+    }
+
+    .small {
+      font-size: 13.5px;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      font-size: 13.5px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Daily Akari Tracker<span class="tag">非公式</span></h1>
+    <p class="lead"><a href="https://dailyakari.com/">Daily Akari</a>
+      のクリア状況とクリアタイムを記録する、<strong>非公式</strong>の補助ツールです。Daily Akari の作者とは関係ありません。</p>
+
+    <ul class="feat">
+      <li style="--c:var(--lamp-p)"><b>成績</b>：難易度別のクリア状況（🌟 パーフェクト／🎯 クリア／未クリア）を帯グラフと一覧で表示します。</li>
+      <li style="--c:var(--lamp-c)"><b>問題選択</b>：問題番号を 1 週間ごとに並べ、難易度・ランプ・作問者で絞り込んで、そのままプレイできます。</li>
+      <li style="--c:var(--gold)"><b>タイム記録</b>：クリアするとタイムを自動で記録し、自己ベストを更新するとお知らせします。</li>
+    </ul>
+
+    <h2>ブックマークレット</h2>
+    <p>次のコードをブックマークとして登録して使います（登録のしかたは下の「導入手順」）。</p>
+    <div class="box">
+      <textarea id="code" readonly aria-label="ブックマークレットのコード"></textarea>
+      <div class="row">
+        <button class="primary" id="copy" type="button">コードをコピー</button>
+        <span class="msg" id="copied" hidden>コピーしました</span>
+      </div>
+      <div class="row small">
+        <span>PC の場合：</span><a class="drag" id="drag" href="#">DA Tracker</a><span>をブックマークバーへドラッグ</span>
+      </div>
+    </div>
+
+    <h2>導入手順</h2>
+    <h3>Android 版 Chrome</h3>
+    <ol class="steps">
+      <li>上の「コードをコピー」を押します。</li>
+      <li>このページをブックマークに追加します（右上の ︙ → ☆）。</li>
+      <li>︙ → 「ブックマーク」を開き、いま追加したブックマークの ︙ → 「編集」を押します。</li>
+      <li>名前を <code>DAT</code> など覚えやすいものに、URL をコピーしたコードに置き換えて保存します（URL 欄を長押しして全部選んでから貼り付けます）。</li>
+      <li><a href="https://dailyakari.com/">Daily Akari</a>
+        を開き、アドレスバーに名前（例：<code>DAT</code>）を入力して、候補に出てくる☆付きのブックマークを押します。</li>
+    </ol>
+    <p class="note">アドレスバーに入力したときは、検索の候補ではなく、<b>☆付きのブックマーク</b>を押してください。ブックマークの一覧から開くと動かないことがあります。</p>
+
+    <h3>PC（Chrome・Edge など）</h3>
+    <ol class="steps">
+      <li>ブックマークバーを表示します（Ctrl + Shift + B）。</li>
+      <li>上の「DA Tracker」をブックマークバーへドラッグします。ドラッグできない場合は、ブックマークを新しく作り、URL にコピーしたコードを貼り付けます。</li>
+      <li><a href="https://dailyakari.com/">Daily Akari</a> を開き、ブックマークを押します。</li>
+    </ol>
+
+    <h2>使い方</h2>
+    <ul>
+      <li>Daily Akari を開いたら、<b>最初にブックマークレットを実行</b>します。左下に「● 記録中」と出れば準備完了です。あとは普段どおり解くだけで、クリアのたびにタイムが記録されます。</li>
+      <li>「● 記録中」を押すと、成績と問題選択の画面が開きます（もう一度ブックマークレットを実行しても開閉できます）。</li>
+      <li>サイト内の移動（今日の問題 ↔ アーカイブ）では記録は止まりません。<b>ページを再読み込みしたり、タブを閉じたりすると止まる</b>ので、もう一度ブックマークレットを実行してください。</li>
+      <li>ツールを実行していなかったときのクリアも、直前に解いた分はゲームの保存データから取り込めます（起動したときと、画面を開いたときに自動で取り込みます）。</li>
+      <li>記録は<b>その端末のそのブラウザの中だけ</b>に保存されます。別の端末と記録をそろえるには、⚙
+        の「書き出し」でファイルを作り、もう一方の端末の「読み込み」で読み込みます。読み込みは上書きではなく合算なので、両方の端末で書き出し・読み込みをすると記録が一致します。</li>
+      インポートは上書きではなく合算なので、両方の端末でエクスポート・インポートをすると記録が一致します。</li>
+      体の記録は消えません）。</li>
+      <li>ページを再読み込みします。</li>
+      <li>ブックマークを削除します。</li>
+      </ol>
+
+      <h2>注意事項</h2>
+      <ul>
+        <li>非公式のツールです。このツールについて Daily Akari の作者に問い合わせないでください。</li>
+        <li>Daily Akari の非公開の仕組みを利用しているため、Daily Akari の更新によって動かなくなることがあります。</li>
+        <li>記録は外部へ送信しません。通信するのは、このツール本体（tracker.js）の読み込みと、Daily Akari のサイトからの問題一覧の取得だけです。</li>
+        <li>Daily Akari 本体の保存データは読み取るだけで、書き換えません。</li>
+        <li>検証しているのは Android 版 Chrome です。そのほかのブラウザでは動かないことがあります。</li>
+      </ul>
+      <p class="note warn">ブックマークレットは、このページで表示されたコードをそのまま使ってください。出どころの分からないコードをブックマークレットとして実行するのは危険です。</p>
+
+      <footer>
+        <p id="src">ソースコード：<a id="srclink" href="#">GitHub</a>（本体は圧縮せず、読めるままの 1 ファイルで公開しています）</p>
+      </footer>
+  </main>
+  <script>
+    (() => {
+      // 本体はこのページと同じ場所にある tracker.js。URL は表示しているページから決める
+      const src = new URL('tracker.js', location.href).href.replace(/'/g, '%27');
+      const code = "javascript:(()=>{if(window.__dat){__dat.toggle();return}const s=document.createElement('script');" +
+        "s.src='" + src + "?v='+Math.floor(Date.now()/36e5);" +
+        "s.onerror=()=>alert('Daily Akari Tracker を読み込めませんでした');" +
+        "document.documentElement.appendChild(s)})()";
+      const ta = document.getElementById('code');
+      ta.value = code;
+      ta.addEventListener('focus', () => ta.select());
+
+      const drag = document.getElementById('drag');
+      drag.href = code;
+      drag.addEventListener('click', e => {
+        e.preventDefault();
+        alert('このボタンは押さずに、ブックマークバーへドラッグしてください。');
+      });
+
+      const copied = document.getElementById('copied');
+      document.getElementById('copy').addEventListener('click', async () => {
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(code);
+          ok = true;
+        } catch (e) {
+          ta.focus();
+          ta.select();
+          try { ok = document.execCommand('copy'); } catch (x) { ok = false; }
+        }
+        copied.textContent = ok ? 'コピーしました' : 'コピーできませんでした。上の枠の中を全部選んでコピーしてください';
+        copied.hidden = false;
+      });
+
+      // GitHub Pages（<ユーザー名>.github.io/<リポジトリ>/）ならリポジトリへのリンクにする
+      const m = /^([^.]+)\.github\.io$/.exec(location.hostname);
+      const repo = location.pathname.split('/').filter(Boolean)[0];
+      if (m && repo) document.getElementById('srclink').href = `https://github.com/${m[1]}/${repo}`;
+      else document.getElementById('src').hidden = true;
+    })();
+  </script>
+</body>
+
+</html>
