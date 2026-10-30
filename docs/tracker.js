@@ -11,7 +11,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.6.0';
+  const VERSION = '0.6.1';
   const APP = 'dailyakari-tracker';
   const SCHEMA = 1;
 
@@ -1066,8 +1066,8 @@
 
   // 問題選択（SPEC 5.7）。曜日ごと: 1 週間 = 1 行（月〜日）。欠番と絞り込みで外れた分は空き枠にし、空の週は詰める。
   // 詰めて表示: 曜日の見出しを消し、表示するマスだけを番号順に並べる
-  function cellHTML(r, extra, withNo) {
-    return `<div class="cell lp-${lampOf(r.acc)}${r.p ? '' : ' np'}${extra}"${withNo ? ` data-n="${r.n}"` : ''} style="--c:var(--d-${diffOf(r.d).cls})">${r.n}</div>`;
+  function cellHTML(r, extra) {
+    return `<div class="cell lp-${lampOf(r.acc)}${r.p ? '' : ' np'}${extra}" data-n="${r.n}" style="--c:var(--d-${diffOf(r.d).cls})">${r.n}</div>`;
   }
   function renderGrid(m, vis) {
     const sel = ui.sel.q;
@@ -1076,7 +1076,7 @@
     if (!vis.length) setHTML(els.qEmpty, emptyHTML(m));
     if (ui.qpack) {
       const rows = vis.slice().sort((a, b) => (ui.qdesc ? b.n - a.n : a.n - b.n));
-      setHTML(els.grid, rows.map(r => cellHTML(r, r.n === sel ? ' sel' : '', true)).join(''));
+      setHTML(els.grid, rows.map(r => cellHTML(r, r.n === sel ? ' sel' : '')).join(''));
       return;
     }
     const byN = new Map(vis.map(r => [r.n, r]));
@@ -1091,7 +1091,7 @@
         const r = byN.get(w * 7 + k + 1);
         if (r) {
           any = true;
-          row += cellHTML(r, r.n === sel ? ' sel' : '', true);
+          row += cellHTML(r, r.n === sel ? ' sel' : '');
         } else {
           row += '<div class="slot"></div>';
         }
@@ -1111,13 +1111,19 @@
     } else {
       const df = diffOf(r.d);
       const today = state.daily && state.daily.n === r.n ? '<span class="today">今日の問題</span>' : '';
+      const l = lampOf(r.acc);
+      // クリア状況は右上に絵文字だけを大きく出す（未クリアは出さない。正確さは表で見る）
+      const lamp = l === 'n' ? '' : `<span class="lamp" role="img" aria-label="${LAMPS.find(x => x[0] === l)[3]}">${l === 'p' ? '🌟' : '🎯'}</span>`;
+      // クリア済みなら、パネルの輪郭をクリア状況の色にする
+      els.sheet.className = `sheet lp-${l}`;
       setHTML(els.sheet,
-        `<div class="sheet-top">${cellHTML(r, ' big', false)}<div class="meta">` +
-        `<div class="date">No.${r.n}　${r.date}${today}</div>` +
-        `<div class="diff"><span class="chip" style="--c:var(--d-${df.cls})">${df.k}</span>${df.name}</div>` +
-        `<div class="auth">${r.author ? esc(r.author) : '（作問者不明）'}</div></div>` +
-        // 右の領域: × とベストのタイム（クリア状況はマスの三角で分かるので出さない。記録がなければ --:--）
-        '<div class="side"><button class="ibtn x" data-act="unsel" aria-label="閉じる">×</button>' +
+        `<div class="sheet-top"><div class="meta">` +
+        `<div class="date">${r.date}${today}</div>` +
+        // 難易度は、色を敷いたラベルで番号の横に出し、その右に作問者を続ける
+        `<div class="ttl"><span class="no"><small>No.</small>${r.n}</span><span class="tag" style="--c:var(--d-${df.cls})">${df.name}</span>` +
+        `<span class="auth">作者：${r.author ? esc(r.author) : '不明'}</span></div></div>` +
+        // 右の領域: クリア状況とベストのタイム（記録がなければ --:--）
+        `<div class="side">${lamp || '<span></span>'}` +
         `<b class="best${r.best ? '' : ' none'}" aria-label="ベスト">${r.best ? fmtTime(r.best.ms) : '--:--'}</b></div></div>` +
         (r.p ? `<button class="play" data-act="play" data-n="${r.n}">▶ プレイ</button>` : '<button class="play" disabled>プレイ不可</button>'));
       els.sheet.hidden = false;
@@ -1336,6 +1342,8 @@
 
   // ---- 操作 ----
   function onClick(e) {
+    // 詳細パネルの外をタップしたら、パネルを閉じる（行やマスは選び直し、ヘッダーはタブを替えても選択を残すので除く）
+    if (!els.sheet.hidden && ui.sel[ui.tab] && e.target.closest('.ov') && !e.target.closest('.sheet,.hdr,[data-n]')) select(ui.sel[ui.tab]);
     const t = e.target.closest('[data-act],[data-tab],[data-n]');
     if (!t) return;
     try {
@@ -1370,7 +1378,6 @@
           render();
           break;
         }
-        case 'unsel': select(ui.sel[ui.tab]); break;
         case 'play': play(Number(t.dataset.n)).catch(err => report(err, 'ページの移動')); break;
         case 'export': exportData(); break;
         case 'import': els.file.click(); break;
@@ -1605,20 +1612,25 @@ button:disabled { cursor: default; }
 .cell.sel { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255,255,255,.16); }
 .slot { height: 48px; border-radius: 6px; background: rgba(255,255,255,.035); }
 
-/* 詳細パネル */
-.sheet { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto; padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -12px 30px rgba(0,0,0,.55); }
-.sheet .x { width: 32px; height: 32px; font-size: 18px; background: var(--surface2); }
-.sheet-top { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
-.side { flex: none; margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.cell.big { --t: 22px; flex: none; width: 72px; height: 72px; border-radius: 12px; font-size: 24px; cursor: default; }
-.meta { flex: 1 1 0; min-width: 0; align-self: center; }
-.meta .date { font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.meta .today { margin-left: 8px; color: var(--gold); font-weight: 700; }
-.meta .diff { margin: 5px 0 3px; font-size: 15px; font-weight: 700; }
-.meta .auth { font-size: 13.5px; overflow-wrap: anywhere; }
-.chip { display: inline-block; min-width: 30px; margin-right: 6px; padding: 1px 7px; border-radius: 5px; background: color-mix(in srgb, var(--c) var(--tint-diff), #fff); box-shadow: inset 0 0 0 1px var(--c); color: #000; font-size: 12px; font-weight: 800; text-align: center; }
-.side .best { font-size: 24px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.play { width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 15.5px; font-weight: 800; }
+/* 詳細パネル（難易度 = 白に混ぜた色のラベルに黒い文字、クリア状況 = 右上の大きな絵文字と、クリア済みならパネルの輪郭の色） */
+.sheet { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto; padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -12px 30px rgba(0,0,0,.55); }
+.sheet.lp-p, .sheet.lp-c { padding-top: 11px; border-width: 2px; }
+.sheet.lp-p { border-color: var(--lamp-p); }
+.sheet.lp-c { border-color: var(--lamp-c); }
+.sheet-top { display: flex; gap: 12px; margin-bottom: 10px; }
+.side { flex: none; margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 4px; }
+.meta { flex: 1 1 0; min-width: 0; }
+.meta .date { font-size: 15px; font-variant-numeric: tabular-nums; }
+.meta .today { margin-left: 10px; color: var(--gold); font-weight: 700; }
+.meta .ttl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 2px; }
+.meta .no { font-size: 40px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta .no small { margin-right: 2px; font-size: 18px; }
+.tag { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 6px; background: color-mix(in srgb, var(--c) var(--tint-diff), #fff); color: #000; font-size: 14.5px; font-weight: 800; white-space: nowrap; }
+/* 作問者は難易度の右に続ける。入りきらない長さなら次の行に回る */
+.meta .auth { flex: 0 1 auto; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.side .lamp { font-size: 30px; line-height: 1; }
+.side .best { font-size: 28px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.play { width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 17px; font-weight: 800; }
 .play:disabled { border: 1px dashed #8b949e; background: var(--surface2); color: var(--text); }
 
 /* 設定（項目は横線で区切る。全消去は間を空けて別にする） */
