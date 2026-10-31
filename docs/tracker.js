@@ -5,17 +5,15 @@
  * ブックマークレットから読み込まれ、DA のページの中だけで動作する。
  * 記録は DA のオリジンの localStorage（キーの接頭辞 "dat."）にだけ保存し、外部へは送信しない。
  * DA 本体の保存データは読み取るだけで、書き込まない。
- *
- * 仕様は SPEC.md を参照（コメント中の「SPEC 6.3」などは章番号）。
  */
 (() => {
   'use strict';
 
-  const VERSION = '0.6.2';
+  const VERSION = '0.6.3';
   const APP = 'dailyakari-tracker';
   const SCHEMA = 1;
 
-  // ---- 起動条件（SPEC 6.1） ----
+  // ---- 起動条件 ----
   if (!/(^|\.)dailyakari\.com$/.test(location.hostname)) {
     if (confirm('Daily Akari Tracker は Daily Akari（dailyakari.com）のページで実行してください。\n\nDaily Akari を開きますか？')) {
       location.href = 'https://dailyakari.com/';
@@ -31,15 +29,15 @@
   const DA_SAVE = 'user://dailyakari.save';
   const V01_KEY = /^akariTracker(List|Code|Part.*)?$/;
   const DAY0 = Date.UTC(2025, 0, 6);   // No.1 の日付（月曜）
-  const LIST_TTL = 12 * 3600 * 1000;    // 一覧の自動更新の間隔（SPEC 6.6）
+  const LIST_TTL = 12 * 3600 * 1000;    // 一覧の自動更新の間隔
   const PAGE_INTERVAL = 400;            // 一覧のページを取得する間隔（ミリ秒）
-  const AUTHOR_MIN = 8;                 // 作問者フィルタに載せる作問数の下限 N（SPEC 5.8）
+  const AUTHOR_MIN = 8;                 // 作問者フィルタに載せる作問数の下限 N
   const LOG_MAX = 40;
-  const BACK_TO_CLOSE = true;           // 「戻る」でオーバーレイを閉じる（SPEC 5.1。DA の遷移と干渉したら false にする）
-  const SPA_NAV = true;                 // プレイボタンでサイト内遷移する（SPEC 6.5。うまくいかなければ false にする）
+  const BACK_TO_CLOSE = true;           // 「戻る」でオーバーレイを閉じる（DA の遷移と干渉したら false にする）
+  const SPA_NAV = true;                 // プレイボタンでサイト内遷移する（うまくいかなければ false にする）
   const OTHER = '\u0000other';          // 作問者フィルタの「その他」
 
-  // 色（SPEC 5.4）。iPadOS 16.1 以前では CSS の color-mix() が動かないので、混ぜた色はここで計算して CSS に埋め込む
+  // 色。iPadOS 16.1 以前では CSS の color-mix() が動かないので、混ぜた色はここで計算して CSS に埋め込む
   const BG = '#0d1117';
   const WHITE = '#ffffff';
   const LAMP_P = '#e3b341';
@@ -53,7 +51,7 @@
     return `rgb(${rgbOf(a).map((v, i) => Math.round((v * pct + to[i] * (100 - pct)) / 100))})`;
   };
 
-  // 難易度の配色（SPEC 5.4 の仮配色: 水色 / 青 / 紫 / ピンク / 赤 / 白）。VE と E、H と VH の差が出るよう、E は濃い青、VH は朱色寄り
+  // 難易度の配色（仮の配色: 水色 / 青 / 紫 / ピンク / 赤 / 白）。VE と E、H と VH の差が出るよう、E は濃い青、VH は朱色寄り
   const DIFFS = [
     { k: '?', name: '不明', cls: 'x', color: '#8b949e' },
     { k: 'VE', name: 'とても簡単', cls: 've', color: '#4cdbe6' },
@@ -114,12 +112,12 @@
     const t = new Date();
     return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
   }
-  // 2025-01-06 からの日数 + 1（SPEC 6.2 の最後の手段）
+  // 2025-01-06 からの日数 + 1（問題番号を決める最後の手段）
   function fallbackNo() {
     const t = new Date();
     return Math.floor((Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()) - DAY0) / 864e5) + 1;
   }
-  // タイムの表記（SPEC 5.2）。秒未満は切り捨て
+  // タイムの表記。秒未満は切り捨て
   function fmtTime(ms) {
     if (!(ms >= 0)) return '';
     const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
@@ -179,7 +177,7 @@
     }
   }
 
-  // dat.data（SPEC 7.1）。別のタブの書き込みを消さないよう、変更のたびに読み直す
+  // dat.data。別のタブの書き込みを消さないよう、変更のたびに読み直す
   function loadData() {
     let raw = null, d = null;
     try { raw = localStorage.getItem(KEY.data); } catch (e) { /* 読めなければ空として扱う */ }
@@ -205,7 +203,7 @@
     return r;
   }
 
-  // dat.list（SPEC 6.6, 7.1）。complete は全ページを取得し終えたかどうか
+  // dat.list。complete は全ページを取得し終えたかどうか
   function emptyList() {
     return { fetchedAt: 0, complete: false, items: {} };
   }
@@ -264,32 +262,23 @@
     else uiTimer = setTimeout(() => writeJSON(KEY.ui, ui), 300);
   }
 
-  // dat.log（受信した通知と、ツールの動作の記録。不具合を調べるときに開発者ツールで見る）
+  // dat.log（エラーの記録。不具合を調べるときに開発者ツールで見る）
   function loadLog() {
     const v = readJSON(KEY.log);
-    return Array.isArray(v) ? v.slice(-LOG_MAX) : [];
+    return Array.isArray(v) ? v.filter(e => isObj(e) && e.k === 'err').slice(-LOG_MAX) : [];
   }
   let logTimer = 0;
   function addLog(e) {
     e.t = nowISO();
-    const last = logBuf[logBuf.length - 1];
-    // loadProgress のように続けて届く同じ種類の通知は 1 件にまとめる
-    if (e.k === 'msg' && !e.clear && last && last.k === 'msg' && !last.clear && last.type === e.type) {
-      last.n = (last.n || 1) + 1;
-      last.t = e.t;
-      last.path = e.path;
-      last.data = e.data;
-    } else {
-      logBuf.push(e);
-      if (logBuf.length > LOG_MAX) logBuf.splice(0, logBuf.length - LOG_MAX);
-    }
+    logBuf.push(e);
+    if (logBuf.length > LOG_MAX) logBuf.splice(0, logBuf.length - LOG_MAX);
     clearTimeout(logTimer);
     logTimer = setTimeout(() => {
       try { localStorage.setItem(KEY.log, JSON.stringify(logBuf)); } catch (err) { /* ログは保存できなくてもよい */ }
     }, 1000);
   }
 
-  // 処理ごとの例外はここに集め、ツール全体は止めない（SPEC 9 章）
+  // 処理ごとの例外はここに集め、ツール全体は止めない
   const errAt = {};
   function report(err, where, quiet) {
     const msg = String((err && err.message) || err).slice(0, 200);
@@ -307,7 +296,7 @@
     const v = readJSON(DA_COMPLETION);
     return isObj(v) ? v : {};
   }
-  // DA の archiveCompletion と、他の端末からインポートした分を合わせ、正確さの高い方を採る（SPEC 5.3）
+  // DA の archiveCompletion と、他の端末からインポートした分を合わせ、正確さの高い方を採る
   function completionMerged(data) {
     const out = {};
     for (const src of [readDACompletion(), data.completion]) {
@@ -345,7 +334,7 @@
   // live の保存データなし（秒単位）と v01 は、ミリ秒が分からない記録
   const isPrecise = a => !/^(live|v01)\|/.test(String(a.sig));
   const accEq = (x, y) => x == null || y == null || Math.abs(x - y) < 1e-6;
-  // 秒単位の記録と、ミリ秒の記録が同じ挑戦かどうか。経路が違うと sig が一致しないので、タイムと正確さで見る
+  // どちらかが秒単位の記録のとき、2 つの記録が同じ挑戦かどうか。経路が違うと sig が一致しないので、タイムと正確さで見る
   function sameRun(a, b) {
     if (!(a.ms > 0) || !(b.ms > 0)) return false;
     if (isPrecise(a) && isPrecise(b)) return false;
@@ -361,7 +350,7 @@
     d.attempts[no] = arr;
     return true;
   }
-  // a が b より速いか。どちらかがミリ秒不明なら秒で比べる（SPEC 6.8）
+  // a が b より速いか。どちらかがミリ秒不明なら秒で比べる
   function faster(a, b) {
     if (isPrecise(a) && isPrecise(b)) return a.ms < b.ms;
     return Math.floor(a.ms / 1000) < Math.floor(b.ms / 1000);
@@ -384,7 +373,7 @@
     return last;
   }
 
-  // ---- API（同一オリジン。SPEC 4.2） ----
+  // ---- API（同一オリジン） ----
   async function api(path) {
     const res = await fetch(location.origin + path, {
       headers: { 'X-Tz-Offset': String(new Date().getTimezoneOffset()), Accept: 'application/json' },
@@ -409,7 +398,7 @@
     };
   }
 
-  // 一覧データの更新（SPEC 6.6）。full でなければ、既知の問題しかないページで打ち切る
+  // 一覧データの更新。full でなければ、既知の問題しかないページで打ち切る
   let listJob = null;
   function updateList(full) {
     if (!listJob) listJob = runListUpdate(full).finally(() => { listJob = null; });
@@ -474,7 +463,7 @@
     }
   }
 
-  // 当日の問題（SPEC 6.2, 6.6）
+  // 当日の問題
   const dailyFresh = () => !!state.daily && state.daily.day === localDayKey();
   async function refreshDaily() {
     const res = await api('/dailypuzzle');
@@ -488,7 +477,7 @@
       saveList();
     }
   }
-  // アーカイブに未掲載で、当日でもない直近の問題を /archivepuzzle で補う（SPEC 5.5）
+  // アーカイブに未掲載で、当日でもない直近の問題を /archivepuzzle で補う
   async function fillGap() {
     if (!state.daily) return;
     let top = 0;
@@ -555,52 +544,32 @@
     return pidIndex;
   }
 
-  // ---- 問題番号の判定（SPEC 6.2） ----
+  // ---- 問題番号の判定 ----
   function archiveNoFromUrl() {
     const m = /^\/archive\/(\d+)\/?$/.exec(location.pathname);
     return m ? Number(m[1]) : 0;
   }
   async function resolveNo() {
     const a = archiveNoFromUrl();
-    if (a) return { n: a, how: 'url' };
+    if (a) return a;
     if (!dailyFresh()) {
       try { await refreshDaily(); } catch (e) { report(e, '当日の問題の取得', true); }
     }
-    if (dailyFresh()) return { n: state.daily.n, how: 'daily' };
-    return { n: fallbackNo(), how: 'calc' };
+    return dailyFresh() ? state.daily.n : fallbackNo();
   }
 
-  // ---- ゲームからの通知（SPEC 4.4, 6.3） ----
+  // ---- ゲームからの通知 ----
   let clearChain = Promise.resolve();
   function onMessage(ev) {
     let d = ev.data;
     if (typeof d === 'string' && d.charAt(0) === '{') {
       try { d = JSON.parse(d); } catch (e) { /* 文字列のまま扱う */ }
     }
-    const clear = isObj(d) && !!d.animTimeBtn && d.timeResult != null;
-    logMsg(d, clear);
-    if (clear) {
+    if (isObj(d) && d.animTimeBtn && d.timeResult != null) {
       clearChain = clearChain.then(() => onClear(d)).catch(e => report(e, 'タイムの記録'));
     }
   }
-  function logMsg(d, clear) {
-    let type, data;
-    try {
-      if (isObj(d)) {
-        type = Object.keys(d).slice(0, 4).join(',');
-        data = JSON.stringify(d);
-      } else {
-        type = typeof d;
-        data = String(d);
-      }
-    } catch (e) {
-      type = 'unknown';
-      data = '';
-    }
-    if (data.length > 300) data = data.slice(0, 300) + '…';
-    addLog({ k: 'msg', type, path: location.pathname, data, clear: clear || undefined });
-  }
-  // 保存データのうち、通知のタイムと 1 秒以内で合うもの（SPEC 6.3 の 3）
+  // 保存データのうち、通知のタイムと 1 秒以内で合うもの（タイムが読めないときは日付の最も新しいもの）
   function pickSave(cands, sec) {
     let best = null;
     for (const c of cands) {
@@ -618,7 +587,7 @@
     const text = String(msg.timeResult).trim();
     const sec = parseTime(text);
     const acc = toAcc(msg.accuracy);
-    const { n: no, how } = await resolveNo();
+    const no = await resolveNo();
     const it = list.items[no];
     const pid = isObj(it) ? it.pid : '';
     let hit = null;
@@ -637,7 +606,6 @@
       prevBest = bestOf(d.attempts[no]);
       return pushAttempt(d, no, rec);
     });
-    addLog({ k: 'rec', no, how, sig: rec.sig, ms: rec.ms, added });
     if (!added) return;   // 開き直したときの再送など
 
     const lamp = acc == null ? '' : ` ${lampText(acc)}`;
@@ -652,7 +620,7 @@
     }
   }
 
-  // ---- ゲームの保存データからの取り込み（SPEC 6.4） ----
+  // ---- ゲームの保存データからの取り込み ----
   let importJob = null;
   function importSave() {
     if (!importJob) importJob = runImportSave().finally(() => { importJob = null; });
@@ -688,14 +656,11 @@
       }
       return n;
     });
-    if (added) {
-      addLog({ k: 'save', added });
-      toast(`未記録のクリアを ${added} 件取り込みました`);
-    }
+    if (added) toast(`未記録のクリアを ${added} 件取り込みました`);
     return added;
   }
 
-  // ---- 旧版（試作 v0.1）からの移行（SPEC 6.7） ----
+  // ---- 旧版（試作 v0.1）からの移行 ----
   function migrateV01() {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -713,7 +678,6 @@
         return;
       }
       const added = updateData(d => recs.filter(r => pushAttempt(d, r.no, r.rec)).length);
-      addLog({ k: 'v01', found: recs.length, added });
       if (added) toast(`旧版の記録を ${added} 件移行しました`);
     }
     keys.forEach(k => localStorage.removeItem(k));
@@ -745,7 +709,7 @@
     return size && !out.length ? null : out;
   }
 
-  // ---- エクスポート・インポート（SPEC 7.2） ----
+  // ---- エクスポート・インポート ----
   function exportName() {
     const t = new Date();
     return `${APP}-${t.getFullYear()}${pad(t.getMonth() + 1)}${pad(t.getDate())}-${pad(t.getHours())}${pad(t.getMinutes())}.json`;
@@ -828,7 +792,6 @@
       let obj;
       try { obj = JSON.parse(await file.text()); } catch (e) { throw new UserError('JSON として読めないファイルです'); }
       const r = mergeImport(obj);
-      addLog({ k: 'import', attempts: r.attempts, lamps: r.lamps });
       toast(`挑戦記録 +${r.attempts} 件、クリア状況 +${r.lamps} 件を統合しました`);
     } catch (e) {
       if (e instanceof UserError) toast(`⚠ ${e.message}`, { warn: true, ms: 6000 });
@@ -840,7 +803,7 @@
 
   // ---- 全消去（DA 本体のデータは消さない） ----
   function wipe() {
-    if (!confirm('ツールのデータ（挑戦記録、一覧データ、表示の設定、受信ログ）をすべて消去します。\nDA 本体のデータは消えません。\n\n消去してよろしいですか？')) return;
+    if (!confirm('ツールのデータ（挑戦記録、一覧データ、表示の設定、エラーのログ）をすべて消去します。\nDA 本体のデータは消えません。\n\n消去してよろしいですか？')) return;
     clearTimeout(uiTimer);
     clearTimeout(logTimer);
     for (const k of Object.values(KEY)) {
@@ -953,8 +916,8 @@
     }
   }
 
-  // フィルタ（SPEC 5.8）。q2 は問題選択用で、1 段目 = 難易度とランプ、2 段目 = 並び順・作問者・プレイ不可を表示・曜日ごと。
-  // それ以外は 1 段目 = 難易度、2 段目 = ランプ・作問者・プレイ不可を表示
+  // フィルタ。q2 は問題選択用で、1 段目 = 難易度とランプ、2 段目 = 並び順・作問者・プレイ不可を表示・曜日ごと。
+  // それ以外は 1 段目 = 難易度、2 段目 = ランプ・作問者・プレイ不可を表示（PC では 1 行に並ぶ）
   function filterHTML(m, q2) {
     const f = ui.filter;
     let h = '<div class="frow">';
@@ -1001,7 +964,7 @@
     setHTML(el, h);
   }
 
-  // クリア状況の「サマリー」「詳細」の開閉（SPEC 5.6）
+  // クリア状況の「サマリー」「詳細」の開閉
   function renderFolds() {
     for (const k of ['sum', 'det']) {
       els.folds[k].btn.setAttribute('aria-expanded', String(ui.fold[k]));
@@ -1009,7 +972,7 @@
     }
   }
 
-  // 帯グラフ（SPEC 5.6）。フィルタの影響を受けない
+  // 帯グラフ。フィルタの影響を受けない
   function bandsHTML(m) {
     const play = m.rows.filter(r => r.p);
     let h = band('全体', '', 'var(--text)', play, true);
@@ -1037,7 +1000,7 @@
       `<div class="bar" title="パーフェクト ${p}　クリア ${c}　未クリア ${n}">${seg('p', p)}${seg('c', c)}${seg('n', n)}</div></div>`;
   }
 
-  // 表（SPEC 5.6）。行の背景 = ランプ（地の色に混ぜて文字は白）、難易度 = 文字の色。
+  // 表。行の背景 = ランプ（地の色に混ぜて文字は白）、難易度 = 文字の色。
   // 難易度は短縮名と正式名の両方を入れ、PC では正式名を見せる。狭い画面では横スクロールさせる
   let shownSort = null;   // 表に今出している並び順（列見出しを押したときの切り替えの基準）
   const CELL = {
@@ -1079,7 +1042,7 @@
     return '条件に合う問題はありません。<br><button class="btn" data-act="freset">絞り込みを解除</button>';
   }
 
-  // 問題選択（SPEC 5.7）。曜日ごと: 1 週間 = 1 行（月〜日）。欠番と絞り込みで外れた分は空き枠にし、空の週は詰める。
+  // 問題選択。曜日ごと: 1 週間 = 1 行（月〜日）。欠番と絞り込みで外れた分は空き枠にし、空の週は詰める。
   // 詰めて表示: 曜日の見出しを消し、表示するマスだけを番号順に並べる
   function cellHTML(r, extra) {
     return `<div class="cell d-${diffOf(r.d).cls} lp-${lampOf(r.acc)}${r.p ? '' : ' np'}${extra}" data-n="${r.n}">${r.n}</div>`;
@@ -1116,7 +1079,7 @@
     setHTML(els.grid, h);
   }
 
-  // 詳細パネル（SPEC 5.7）。クリア状況タブの行をタップしたときも同じものを出す
+  // 詳細パネル。クリア状況タブの行をタップしたときも同じものを出す
   function renderSheet() {
     const tab = ui.tab, n = tab === 'set' ? 0 : ui.sel[tab];
     const r = n ? getModel().byN.get(n) : null;
@@ -1187,7 +1150,7 @@
     const ds = Math.floor(prev.ms / 1000) - Math.floor(rec.ms / 1000);
     return ds >= 1 ? `−${fmtTime(ds * 1000)}` : `−${((prev.ms - rec.ms) / 1000).toFixed(2)}秒`;
   }
-  // 自己ベスト更新の演出（SPEC 6.9）。CSS アニメーションだけで、1.5 秒以内に終わる
+  // 自己ベスト更新の演出。CSS アニメーションだけで、1.5 秒以内に終わる
   function celebrate(no, prev, rec) {
     toast(`<b>🏆 自己ベスト更新！</b><br>No.${no}　${dispTime(prev)} → ${dispTime(rec)}（${deltaText(prev, rec)}）`, { gold: true, html: true, ms: 6000 });
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1274,7 +1237,7 @@
     else arr.splice(i, 1);
   }
 
-  // プレイボタン（SPEC 6.5）。再読み込みせずに DA のルーターに遷移してもらう
+  // プレイボタン。再読み込みせずに DA のルーターに遷移してもらう
   async function play(n) {
     const r = getModel().byN.get(n);
     if (!r || !r.p) return;
@@ -1292,13 +1255,12 @@
     try {
       history.pushState(null, '', path);
       window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
-      addLog({ k: 'nav', path });
     } catch (e) {
       report(e, 'ページの移動');
     }
   }
 
-  // ---- 「戻る」で閉じる（SPEC 5.1） ----
+  // ---- 「戻る」で閉じる ----
   // 開いたときに同じ URL の履歴を 1 つ積み、「戻る」でそれが外れたら閉じる。
   // この popstate は先に登録された DA のルーターにも届く（window では capture でも先回りできない）。
   // URL が変わらないので、Angular の既定（onSameUrlNavigation: 'ignore'）なら遷移は起きない
@@ -1458,7 +1420,7 @@
   --text: #f0f3f6;
   --accent: #79c0ff;
   --gold: #f2c94c;
-  /* ランプ（SPEC 5.4: パーフェクト = 黄、クリア = 緑、未クリア = 暗い灰） */
+  /* ランプ（パーフェクト = 黄、クリア = 緑、未クリア = 暗い灰） */
   --lamp-p: ${LAMP_P};
   --lamp-c: ${LAMP_C};
   --lamp-n: #2b323b;
@@ -1520,7 +1482,7 @@ button:disabled { cursor: default; }
 .empty { padding: 36px 16px; text-align: center; font-size: 13px; line-height: 1.8; }
 .empty .btn { margin-top: 12px; }
 
-/* 難易度の色（SPEC 5.4）。--c = 元の色、--c-rgb = 透明度を付けるときの値、--c-tint = 白に混ぜた背景の色（文字は黒）、--c-text = 表の文字の色 */
+/* 難易度の色。--c = 元の色、--c-rgb = 透明度を付けるときの値、--c-tint = 白に混ぜた背景の色（文字は黒）、--c-text = 表の文字の色 */
 ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c-tint: ${mix(d.color, WHITE, TINT_DIFF)}; --c-text: ${mix(d.color, WHITE, TINT_DIFF_TEXT)}; }`).join('\n')}
 
 /* フィルタ */
@@ -1660,7 +1622,7 @@ ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c
 /* PC など幅の広い画面では、クリア状況のフィルタを 1 行に収め、表の文字を大きくして難易度を正式名にする */
 @media (min-width: 700px) {
   .flt { flex-direction: row; align-items: center; }
-  /* 難易度のボタンは広げず、クリア状況と問題選択で同じ幅にする（入りきらない幅では縮む） */
+  /* 難易度のボタンは広げも縮めもせず、クリア状況と問題選択で同じ幅にする（入りきらない幅では残りの行の側を縮める） */
   .flt .frow:first-child { flex: none; }
   .flt .frow:not(:first-child) { flex: 1 1 auto; min-width: 0; }
   .dbtn { flex: none; width: 54px; }
@@ -1773,11 +1735,11 @@ ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c
         saveUI();
       }, { passive: true });
     }
-    // DA の body には touch-action: none があるので、body ではなく <html> の直下に置く（SPEC 5.1）
+    // DA の body には touch-action: none があるので、body ではなく <html> の直下に置く
     document.documentElement.appendChild(host);
   }
 
-  // ---- 起動（SPEC 6.1） ----
+  // ---- 起動 ----
   function start() {
     list = loadList();
     ui = loadUI();
@@ -1789,7 +1751,6 @@ ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c
     window.addEventListener('popstate', onPopState, true);
     window.addEventListener('storage', onStorage);
     document.addEventListener('keydown', onKeyDown, true);
-    addLog({ k: 'start', v: VERSION, path: location.pathname });
     toast('記録を開始しました');
     syncList('start')
       .then(() => importSave())

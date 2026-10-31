@@ -23,7 +23,6 @@
 ## 構成
 
 ```
-SPEC.md        仕様書
 docs/          GitHub Pages の公開対象（Settings → Pages → main ブランチ /docs）
   index.html   導入ページ
   tracker.js   本体（外部ライブラリなし、圧縮なしの 1 ファイル）
@@ -34,4 +33,4 @@ docs/          GitHub Pages の公開対象（Settings → Pages → main ブラ
 
 - ビルドやテストの仕組みはありません。`docs/tracker.js` を直接編集します。
 - Daily Akari の localStorage・API・ゲームからの通知に依存するため、動作確認は dailyakari.com の上で行います（CSP がないので、開発者ツールのコンソールに `tracker.js` の中身を貼り付けても動きます）。
-- Daily Akari の内部仕様は非公開で、変わることがあります。調べた内容は SPEC.md の 4 章にあります。
+- Daily Akari の内部仕様は非公開で、変わることがあります。
