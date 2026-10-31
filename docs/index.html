@@ -17,7 +17,6 @@
       --gold: #f2c94c;
       --lamp-p: #e3b341;
       --lamp-c: #2ea043;
-      --warn: #ff7b72;
     }
 
     * {
@@ -32,11 +31,11 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 15px/1.75 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+      font: 15px/1.75 sans-serif;
     }
 
     main {
-      max-width: 680px;
+      max-width: 792px;
       margin: 0 auto;
       padding: 28px 16px 64px;
     }
@@ -82,7 +81,7 @@
       padding: 1px 5px;
       border-radius: 4px;
       background: var(--surface2);
-      font: 13.5px/1.5 ui-monospace, Consolas, monospace;
+      font: 13.5px/1.5 monospace;
     }
 
     b,
@@ -109,7 +108,7 @@
 
     .feat {
       display: grid;
-      gap: 8px;
+      gap: 10px;
       margin: 16px 0 0;
       padding: 0;
       list-style: none;
@@ -117,10 +116,575 @@
 
     .feat li {
       margin: 0;
-      padding: 10px 12px 10px 14px;
-      border-left: 3px solid var(--c);
+      padding: 10px 12px 12px;
+      border-top: 3px solid var(--c);
       background: var(--surface);
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .feat b {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    @media (min-width: 600px) {
+      .feat {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* 画面イメージ。見本は狭い画面の見た目なので、幅を抑えて 1 枚ずつ見せる */
+    .shots {
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .shot-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .shot-tabs button {
+      flex: 1;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 13.5px;
+    }
+
+    .shot-tabs button[aria-pressed="true"] {
+      border-color: var(--text);
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .shots .small {
+      margin: 8px 0 0;
+    }
+
+    /* ここから下は tracker.js の画面の CSS を、見本に使う分だけ写したもの。tracker.js の見た目を変えたら合わせて直す。
+       混ぜた色は tracker.js の mix() と同じ計算の結果を値で書く */
+    .shot {
+      --lamp-n: #2b323b;
+      --tri-p: #ffd400;
+      --tri-c: #00d455;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 750px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+      font-size: 13px;
+      line-height: 1.4;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .shot[hidden] {
+      display: none;
+    }
+
+    /* 幅が狭いと帯の行が折り返して長くなるので、「詳細」の帯まで入る高さにする */
+    @media (max-width: 451px) {
+      .shot {
+        height: 875px;
+      }
+    }
+
+    .shot .d-all {
+      --c: var(--text);
+    }
+
+    .shot .d-ve {
+      --c: #4cdbe6;
+      --c-rgb: 76, 219, 230;
+      --c-tint: rgb(157, 235, 241);
+    }
+
+    .shot .d-e {
+      --c: #3366ff;
+      --c-rgb: 51, 102, 255;
+      --c-tint: rgb(143, 171, 255);
+    }
+
+    .shot .d-m {
+      --c: #a371f7;
+      --c-rgb: 163, 113, 247;
+      --c-tint: rgb(204, 177, 251);
+    }
+
+    .shot .d-h {
+      --c: #ff6ec7;
+      --c-rgb: 255, 110, 199;
+      --c-tint: rgb(255, 175, 224);
+    }
+
+    .shot .d-vh {
+      --c: #ff4520;
+      --c-rgb: 255, 69, 32;
+      --c-tint: rgb(255, 153, 132);
+    }
+
+    .shot .d-uh {
+      --c: #f0f3f6;
+      --c-rgb: 240, 243, 246;
+      --c-tint: rgb(247, 248, 250);
+    }
+
+    .shot .hdr {
+      flex: none;
+      display: flex;
+      align-items: center;
+      height: 49px;
+      padding: 0 4px 0 6px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shot .tabs {
+      flex: 1;
+      display: flex;
+      height: 100%;
+    }
+
+    .shot .tab {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .shot .tab.on {
+      font-weight: 800;
+    }
+
+    .shot .tab.on::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: var(--text);
+    }
+
+    .shot .ibtn {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .shot .fold {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .shot .fold::before {
+      content: "▸";
+      flex: none;
+      width: 1em;
+      font-size: .85em;
+      text-align: center;
+    }
+
+    .shot .fold.open::before {
+      content: "▾";
+    }
+
+    .shot .fold.sum {
+      border-top: 0;
+    }
+
+    .shot .fold.det {
+      margin-top: 14px;
+    }
+
+    .shot .legend {
+      display: flex;
+      gap: 16px;
+      padding: 12px 12px 10px;
+    }
+
+    .shot .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      margin-right: 4px;
+      border-radius: 2px;
+      background: var(--c);
+      vertical-align: -1px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .25);
+    }
+
+    .shot .bands {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 0 12px 6px;
+    }
+
+    .shot .band-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 2px 8px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .shot .band-name {
+      white-space: nowrap;
+    }
+
+    .shot .band-name b {
+      margin-right: 6px;
+      color: var(--c);
+      font-size: 17px;
+    }
+
+    .shot .band-name span {
+      font-size: 13px;
+    }
+
+    .shot .band-rate {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .shot .bar {
+      display: flex;
+      height: 24px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--lamp-n);
+    }
+
+    .shot .band.all {
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shot .band.all .bar {
+      height: 30px;
+    }
+
+    .shot .seg {
+      flex: none;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .shot .seg.p {
+      background: var(--lamp-p);
+      color: #000;
+    }
+
+    .shot .seg.c {
+      background: var(--lamp-c);
+      color: #000;
+    }
+
+    .shot .seg.n {
+      background: var(--lamp-n);
+      color: var(--text);
+    }
+
+    .shot .flt {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 8px 7px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shot .frow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .shot .frow.top {
+      flex-wrap: nowrap;
+    }
+
+    .shot .dbtn {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      place-items: center;
+      height: 30px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(var(--c-rgb), .55);
+      background: rgba(var(--c-rgb), .08);
+      color: var(--c);
+      font-weight: 700;
+    }
+
+    .shot .lbtn {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 14px;
+    }
+
+    .shot .sortb,
+    .shot .author {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .shot .author {
+      padding: 0 8px;
+    }
+
+    .shot .sw {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 2px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .shot .sw i {
+      position: relative;
+      flex: none;
+      width: 30px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1.5px solid #8b949e;
+      background: var(--surface);
+    }
+
+    .shot .sw i::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      background: var(--text);
+    }
+
+    .shot .sw i.on {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .shot .sw i.on::after {
+      transform: translateX(12px);
+      background: #000;
+    }
+
+    .shot .cnt {
+      flex: none;
+      display: flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 4px 8px 4px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .shot .week-h,
+    .shot .grid7 {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .shot .week-h {
+      flex: none;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--line);
+      font-size: 11.5px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .shot .grid7 {
+      padding: 8px 10px;
+    }
+
+    .shot .cell {
+      --t: 12px;
+      --tri: none;
+      display: grid;
+      place-items: center;
+      height: 48px;
+      border-radius: 6px;
+      background-color: var(--c-tint);
+      background-image: var(--tri);
+      color: #000;
+      font-size: 15px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .shot .cell.lp-p {
+      --tri: linear-gradient(135deg, var(--tri-p) calc(var(--t) - .5px), #000 var(--t), #000 calc(var(--t) + 1px), transparent calc(var(--t) + 1.5px));
+    }
+
+    .shot .cell.lp-c {
+      --tri: linear-gradient(135deg, var(--tri-c) calc(var(--t) - .5px), #000 var(--t), #000 calc(var(--t) + 1px), transparent calc(var(--t) + 1.5px));
+    }
+
+    .shot .cell.sel {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, .16);
+    }
+
+    .shot .slot {
+      height: 48px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .035);
+    }
+
+    .shot .sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 11px 14px 12px;
+      background: var(--surface);
+      border: 2px solid var(--lamp-c);
+      border-bottom: 0;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -12px 30px rgba(0, 0, 0, .55);
+    }
+
+    .shot .sheet-top {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .shot .meta {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .shot .date {
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .shot .ttl {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 2px 10px;
+      margin-top: 2px;
+    }
+
+    .shot .no {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .shot .no small {
+      margin-right: 2px;
+      font-size: 18px;
+    }
+
+    .shot .dtag {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 6px;
+      background: var(--c-tint);
+      color: #000;
+      font-size: 14.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .shot .auth {
+      font-size: 15px;
+    }
+
+    .shot .side {
+      flex: none;
+      margin-left: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .shot .lamp {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .shot .best {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .shot .play {
+      display: grid;
+      place-items: center;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 17px;
+      font-weight: 800;
     }
 
     .box {
@@ -131,18 +695,17 @@
       background: var(--surface);
     }
 
-    textarea {
+    #code {
       display: block;
       width: 100%;
-      height: 108px;
-      padding: 10px;
-      resize: vertical;
+      height: 40px;
+      padding: 0 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--bg);
       color: var(--text);
-      font: 12.5px/1.5 ui-monospace, Consolas, monospace;
-      word-break: break-all;
+      font: 12.5px/1.5 monospace;
+      text-overflow: ellipsis;
     }
 
     .row {
@@ -199,22 +762,11 @@
       font-size: 14px;
     }
 
-    .note.warn {
-      border-left-color: var(--warn);
-    }
-
     ol.steps>li {
       margin-top: 8px;
     }
 
     .small {
-      font-size: 13.5px;
-    }
-
-    footer {
-      margin-top: 48px;
-      padding-top: 16px;
-      border-top: 1px solid var(--line);
       font-size: 13.5px;
     }
   </style>
@@ -224,73 +776,76 @@
   <main>
     <h1>Daily Akari Tracker<span class="tag">非公式</span></h1>
     <p class="lead"><a href="https://dailyakari.com/">Daily Akari</a>
-      のクリア状況とクリアタイムを記録する、<strong>非公式</strong>の補助ツールです。Daily Akari の作者とは関係ありません。</p>
+      のクリア状況とクリアタイムを記録する非公式ツールです。</p>
 
     <ul class="feat">
-      <li style="--c:var(--lamp-p)"><b>成績</b>：難易度別のクリア状況（🌟 パーフェクト／🎯 クリア／未クリア）を帯グラフと一覧で表示します。</li>
-      <li style="--c:var(--lamp-c)"><b>問題選択</b>：問題番号を 1 週間ごとに並べ、難易度・ランプ・作問者で絞り込んで、そのままプレイできます。</li>
-      <li style="--c:var(--gold)"><b>タイム記録</b>：クリアするとタイムを自動で記録し、自己ベストを更新するとお知らせします。</li>
+      <li style="--c:var(--lamp-c)"><b>タイムを自動記録</b>クリアするとタイムを自動で記録し、自己ベストを更新すると🎉お祝い🎊します。</li>
+      <li style="--c:var(--lamp-c)"><b>クリア状況を確認</b>難易度ごと・作問者ごとに、🌟 パーフェクト／🎯 クリア／未クリアを確認できます。</li>
+      <li style="--c:var(--lamp-c)"><b>問題を選択</b>難易度・作問者・クリア状況で絞り込み、問題を選んでそのままプレイできます。</li>
     </ul>
+
+    <h2>画面イメージ</h2>
+    <div class="shots">
+      <div class="shot-tabs">
+        <button type="button" data-shot="shot-s" aria-pressed="true">クリア状況</button>
+        <button type="button" data-shot="shot-q" aria-pressed="false">問題選択</button>
+      </div>
+      <div class="shot" id="shot-s" aria-hidden="true"></div>
+      <div class="shot" id="shot-q" aria-hidden="true" hidden></div>
+      <p class="small">※数値は架空のものです。</p>
+    </div>
 
     <h2>ブックマークレット</h2>
     <p>次のコードをブックマークとして登録して使います（登録のしかたは下の「導入手順」）。</p>
     <div class="box">
-      <textarea id="code" readonly aria-label="ブックマークレットのコード"></textarea>
+      <input id="code" type="text" readonly aria-label="ブックマークレットのコード">
       <div class="row">
-        <button class="primary" id="copy" type="button">コードをコピー</button>
+        <button class="primary" id="copy" type="button">コピー</button>
         <span class="msg" id="copied" hidden>コピーしました</span>
       </div>
       <div class="row small">
-        <span>PC の場合：</span><a class="drag" id="drag" href="#">DA Tracker</a><span>をブックマークバーへドラッグ</span>
+        <span>PC の場合：</span><a class="drag" id="drag" href="#">DAT</a><span>をブックマークバーへドラッグ</span>
       </div>
     </div>
 
     <h2>導入手順</h2>
-    <h3>Android 版 Chrome</h3>
-    <ol class="steps">
-      <li>上の「コードをコピー」を押します。</li>
-      <li>このページをブックマークに追加します（右上の ︙ → ☆）。</li>
-      <li>︙ → 「ブックマーク」を開き、いま追加したブックマークの ︙ → 「編集」を押します。</li>
-      <li>名前を <code>DAT</code> など覚えやすいものに、URL をコピーしたコードに置き換えて保存します（URL 欄を長押しして全部選んでから貼り付けます）。</li>
-      <li><a href="https://dailyakari.com/">Daily Akari</a>
-        を開き、アドレスバーに名前（例：<code>DAT</code>）を入力して、候補に出てくる☆付きのブックマークを押します。</li>
-    </ol>
-    <p class="note">アドレスバーに入力したときは、検索の候補ではなく、<b>☆付きのブックマーク</b>を押してください。ブックマークの一覧から開くと動かないことがあります。</p>
-
     <h3>PC（Chrome・Edge など）</h3>
     <ol class="steps">
       <li>ブックマークバーを表示します（Ctrl + Shift + B）。</li>
-      <li>上の「DA Tracker」をブックマークバーへドラッグします。ドラッグできない場合は、ブックマークを新しく作り、URL にコピーしたコードを貼り付けます。</li>
+      <li>上の「DAT」をブックマークバーへドラッグします。ドラッグできない場合は、ブックマークを新しく作り、URL にコピーしたコードを貼り付けます。</li>
       <li><a href="https://dailyakari.com/">Daily Akari</a> を開き、ブックマークを押します。</li>
     </ol>
 
+    <h3>スマホ・タブレット（Chrome）</h3>
+    <ol class="steps">
+      <li>上の「コピー」を押します。</li>
+      <li>ブラウザのメニューから、このページをブックマークに追加します。</li>
+      <li>下に出る通知の「編集」を押します。</li>
+      <li>名前を <code>DAT</code> に、URL をコピーしたコードに置き換えて保存します。</li>
+      <li><a href="https://dailyakari.com/">Daily Akari</a>
+        を開き、アドレスバーに <code>DAT</code> と入力して、候補に出てくる☆付きのブックマークを押します。動かないときは、ブックマークの一覧から押します。</li>
+    </ol>
+    <p class="note">アドレスバーに入力したときは、検索の候補ではなく、<b>☆付きのブックマーク</b>を押してください。</p>
+    <p>ブックマークを保存できない、押しても動かないときは、別のブラウザを試してください。</p>
+
     <h2>使い方</h2>
     <ul>
-      <li>Daily Akari を開いたら、<b>最初にブックマークレットを実行</b>します。左下に「● 記録中」と出れば準備完了です。あとは普段どおり解くだけで、クリアのたびにタイムが記録されます。</li>
-      <li>「● 記録中」を押すと、成績と問題選択の画面が開きます（もう一度ブックマークレットを実行しても開閉できます）。</li>
-      <li>サイト内の移動（今日の問題 ↔ アーカイブ）では記録は止まりません。<b>ページを再読み込みしたり、タブを閉じたりすると止まる</b>ので、もう一度ブックマークレットを実行してください。</li>
-      <li>ツールを実行していなかったときのクリアも、直前に解いた分はゲームの保存データから取り込めます（起動したときと、画面を開いたときに自動で取り込みます）。</li>
-      <li>記録は<b>その端末のそのブラウザの中だけ</b>に保存されます。別の端末と記録をそろえるには、⚙
-        の「書き出し」でファイルを作り、もう一方の端末の「読み込み」で読み込みます。読み込みは上書きではなく合算なので、両方の端末で書き出し・読み込みをすると記録が一致します。</li>
-      インポートは上書きではなく合算なので、両方の端末でエクスポート・インポートをすると記録が一致します。</li>
-      体の記録は消えません）。</li>
-      <li>ページを再読み込みします。</li>
-      <li>ブックマークを削除します。</li>
-      </ol>
+      <li>Daily Akari を開いた状態で<b>ブックマークレットを実行</b>します。左下に「<b>● 記録中</b>」と出れば準備完了です。</li>
+      <li>「<b>● 記録中</b>」を押すと各種機能が使えます。</li>
+      <li><b>ページを再読み込みすると止まる</b>ので、再度ブックマークレットを実行してください。</li>
+      <li>ツールを実行していない間のクリアも自動で取り込めます。</li>
+      <li>記録は<b>ブラウザ単位で保存</b>されます。<b>設定</b>から<b>エクスポート・インポート</b>を行うことで別の端末の記録とまとめることができます。</li>
+    </ul>
 
-      <h2>注意事項</h2>
-      <ul>
-        <li>非公式のツールです。このツールについて Daily Akari の作者に問い合わせないでください。</li>
-        <li>Daily Akari の非公開の仕組みを利用しているため、Daily Akari の更新によって動かなくなることがあります。</li>
-        <li>記録は外部へ送信しません。通信するのは、このツール本体（tracker.js）の読み込みと、Daily Akari のサイトからの問題一覧の取得だけです。</li>
-        <li>Daily Akari 本体の保存データは読み取るだけで、書き換えません。</li>
-        <li>検証しているのは Android 版 Chrome です。そのほかのブラウザでは動かないことがあります。</li>
-      </ul>
-      <p class="note warn">ブックマークレットは、このページで表示されたコードをそのまま使ってください。出どころの分からないコードをブックマークレットとして実行するのは危険です。</p>
+    <h2>注意事項</h2>
+    <ul>
+      <li>非公式のツールです。このツールについて Daily Akari の作者に問い合わせないでください。</li>
+      <li>Daily Akari の非公開の仕組みを利用しているため、Daily Akari の更新によって動かなくなることがあります。</li>
+      <li>記録は外部へ送信しません。通信が発生するのは、このツール本体の読み込みと、Daily Akari のサイトからの問題取得だけです。</li>
+      <li>Daily Akari 本体の保存データは読み取るだけで書き換えません。</li>
+      <li>全てのブラウザで検証したわけではないので、一部のブラウザでは動かない可能性があります。</li>
+    </ul>
 
-      <footer>
-        <p id="src">ソースコード：<a id="srclink" href="#">GitHub</a>（本体は圧縮せず、読めるままの 1 ファイルで公開しています）</p>
-      </footer>
   </main>
   <script>
     (() => {
@@ -300,9 +855,9 @@
         "s.src='" + src + "?v='+Math.floor(Date.now()/36e5);" +
         "s.onerror=()=>alert('Daily Akari Tracker を読み込めませんでした');" +
         "document.documentElement.appendChild(s)})()";
-      const ta = document.getElementById('code');
-      ta.value = code;
-      ta.addEventListener('focus', () => ta.select());
+      const field = document.getElementById('code');
+      field.value = code;
+      field.addEventListener('focus', () => field.select());
 
       const drag = document.getElementById('drag');
       drag.href = code;
@@ -318,19 +873,71 @@
           await navigator.clipboard.writeText(code);
           ok = true;
         } catch (e) {
-          ta.focus();
-          ta.select();
+          field.focus();
+          field.select();
           try { ok = document.execCommand('copy'); } catch (x) { ok = false; }
         }
         copied.textContent = ok ? 'コピーしました' : 'コピーできませんでした。上の枠の中を全部選んでコピーしてください';
         copied.hidden = false;
       });
 
-      // GitHub Pages（<ユーザー名>.github.io/<リポジトリ>/）ならリポジトリへのリンクにする
-      const m = /^([^.]+)\.github\.io$/.exec(location.hostname);
-      const repo = location.pathname.split('/').filter(Boolean)[0];
-      if (m && repo) document.getElementById('srclink').href = `https://github.com/${m[1]}/${repo}`;
-      else document.getElementById('src').hidden = true;
+      // 画面イメージ。数値は架空のもので、表示だけなのでボタンも span で組む
+      const DIFFS = [['VE', 'とても簡単', 've'], ['E', '簡単', 'e'], ['M', '普通', 'm'], ['H', '難しい', 'h'], ['VH', 'とても難しい', 'vh'], ['UH', '極めて難しい', 'uh']];
+      const hdr = tab => '<div class="hdr"><div class="tabs">' +
+        `<span class="tab${tab === 's' ? ' on' : ''}">クリア状況</span><span class="tab${tab === 'q' ? ' on' : ''}">問題選択</span>` +
+        '</div><span class="ibtn">⚙&#xFE0E;</span><span class="ibtn">×</span></div>';
+
+      // 難易度ごとの [問題数, パーフェクト, クリア]
+      const COUNTS = [[106, 78, 16], [108, 64, 28], [104, 47, 30], [98, 33, 29], [102, 21, 22], [94, 9, 8]];
+      const total = i => COUNTS.reduce((a, c) => a + c[i], 0);
+      const band = (label, sub, cls, t, p, c, all) => {
+        const seg = (k, v) => `<span class="seg ${k}" style="width:${v / t * 100}%">${v / t >= .07 ? v : ''}</span>`;
+        return `<div class="band ${cls}${all ? ' all' : ''}">` +
+          `<div class="band-top"><span class="band-name"><b>${label}</b><span>${sub ? sub + '　' : ''}${t} 問</span></span>` +
+          `<span class="band-rate">クリア率 <b>${Math.floor((p + c) * 100 / t)}%</b>　パーフェクト率 <b>${Math.floor(p * 100 / t)}%</b></span></div>` +
+          `<div class="bar">${seg('p', p)}${seg('c', c)}${seg('n', t - p - c)}</div></div>`;
+      };
+      document.getElementById('shot-s').innerHTML = hdr('s') +
+        '<div class="fold sum open">サマリー</div>' +
+        '<div class="legend"><span style="--c:var(--lamp-p)">パーフェクト</span><span style="--c:var(--lamp-c)">クリア</span><span style="--c:var(--lamp-n)">未クリア</span></div>' +
+        '<div class="bands">' + band('全体', '', 'd-all', total(0), total(1), total(2), true) +
+        DIFFS.map(([k, name, cls], i) => band(k, name, 'd-' + cls, ...COUNTS[i])).join('') + '</div>' +
+        '<div class="fold det">詳細</div>';
+
+      // 曜日ごとの難易度（月〜日）。No.1 が月曜なので、(番号 - 1) % 7 が曜日になる
+      const WEEK = [0, 1, 2, 3, 3, 4, 5], LAST_WEEK = 94, SEL = 661;
+      const cell = n => {
+        if (n % 13 === 5) return '<div class="slot"></div>';
+        const d = WEEK[(n - 1) % 7], x = n * 37 % 100;
+        const lamp = x < 70 - d * 11 ? 'p' : x < 88 - d * 9 ? 'c' : 'n';
+        return `<div class="cell d-${DIFFS[d][2]} lp-${lamp}${n === SEL ? ' sel' : ''}">${n}</div>`;
+      };
+      let cells = '';
+      for (let w = LAST_WEEK; w > LAST_WEEK - 13; w--) for (let k = 1; k <= 7; k++) cells += cell(w * 7 + k);
+      const sw = (label, on) => `<span class="sw"><i${on ? ' class="on"' : ''}></i>${label}</span>`;
+      document.getElementById('shot-q').innerHTML = hdr('q') +
+        '<div class="flt"><div class="frow top">' + DIFFS.map(([k, , cls]) => `<span class="dbtn d-${cls}">${k}</span>`).join('') +
+        '<span class="lbtn">－</span><span class="lbtn">🎯</span><span class="lbtn">🌟</span></div>' +
+        '<div class="frow"><span class="sortb">新しい順</span><span class="author">作問者: すべて ▾</span>' +
+        sw('プレイ不可を表示', false) + sw('曜日ごと', true) + '</div></div>' +
+        `<div class="cnt">${total(0)} 問</div>` +
+        '<div class="week-h">' + [...'月火水木金土日'].map(c => `<span>${c}</span>`).join('') + '</div>' +
+        `<div class="grid7">${cells}</div>` +
+        '<div class="sheet"><div class="sheet-top"><div class="meta"><div class="date">26/10/28(水)</div>' +
+        `<div class="ttl"><span class="no"><small>No.</small>${SEL}</span><span class="dtag d-m">普通</span>` +
+        '<span class="auth">作者：サンプル</span></div></div>' +
+        '<div class="side"><span class="lamp">🎯</span><b class="best">4:12</b></div></div>' +
+        '<div class="play">▶ プレイ</div></div>';
+
+      const shotTabs = [...document.querySelectorAll('[data-shot]')];
+      for (const tab of shotTabs) {
+        tab.addEventListener('click', () => {
+          for (const t of shotTabs) {
+            t.setAttribute('aria-pressed', t === tab);
+            document.getElementById(t.dataset.shot).hidden = t !== tab;
+          }
+        });
+      }
     })();
   </script>
 </body>
