@@ -113,7 +113,7 @@
 
     .feat {
       display: grid;
-      gap: 10px;
+      gap: 14px;
       margin: 16px 0 0;
       padding: 0;
       list-style: none;
@@ -130,41 +130,53 @@
     .feat b {
       display: block;
       margin-bottom: 2px;
+      font-size: 17px;
     }
 
     @media (min-width: 600px) {
       .feat {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
     /* 画面イメージ。見本は狭い画面の見た目なので、幅を抑えて 1 枚ずつ見せる */
     .shots {
-      max-width: 420px;
+      max-width: 560px;
       margin: 0 auto;
     }
 
+    .shots .shot,
+    .shots .small {
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* 切り替えのボタンは、見本の中のタブと見分けがつくよう、リンクと同じ青にして見本から離す */
     .shot-tabs {
       display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 16px;
     }
 
     .shot-tabs button {
       flex: 1;
-      height: 32px;
+      height: 40px;
       padding: 0 10px;
-      font-size: 13.5px;
+      border-color: var(--accent);
+      background: transparent;
+      color: var(--accent);
+      font-size: 14.5px;
     }
 
     .shot-tabs button[aria-pressed="true"] {
-      border-color: var(--text);
-      background: var(--text);
+      background: var(--accent);
       color: var(--bg);
     }
 
     .shots .small {
-      margin: 8px 0 0;
+      margin-top: 8px;
+      margin-bottom: 0;
     }
 
     /* ここから下は tracker.js の画面の CSS を、見本に使う分だけ写したもの。tracker.js の見た目を変えたら合わせて直す。
@@ -481,6 +493,12 @@
       white-space: nowrap;
     }
 
+    .shot .sortb {
+      justify-content: center;
+      width: 70px;
+      padding: 0;
+    }
+
     .shot .author {
       padding: 0 8px;
     }
@@ -608,23 +626,35 @@
     .shot .sheet-top {
       display: flex;
       gap: 12px;
+      min-height: 76px;
       margin-bottom: 10px;
     }
 
     .shot .meta {
       flex: 1 1 0;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .shot .date {
+      display: flex;
+      flex-wrap: wrap;
       font-size: 15px;
       font-variant-numeric: tabular-nums;
+    }
+
+    .shot .size {
+      margin-left: auto;
+      padding-left: 8px;
+      white-space: nowrap;
     }
 
     .shot .ttl {
       display: flex;
       flex-wrap: wrap;
-      align-items: baseline;
+      align-items: flex-end;
       gap: 2px 10px;
       margin-top: 2px;
     }
@@ -632,7 +662,7 @@
     .shot .no {
       font-size: 40px;
       font-weight: 800;
-      line-height: 1.05;
+      line-height: .74;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -656,7 +686,19 @@
     }
 
     .shot .auth {
+      flex: 0 1 auto;
+      min-width: 0;
       font-size: 15px;
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .shot .pv {
+      flex: none;
+      align-self: flex-end;
+      margin-right: 8px;
+      border: 1px solid #fff;
+      shape-rendering: crispEdges;
     }
 
     .shot .side {
@@ -677,8 +719,9 @@
     .shot .best {
       font-size: 28px;
       font-weight: 800;
-      line-height: 1.1;
+      line-height: .74;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
     .shot .play {
@@ -784,20 +827,21 @@
       のクリア状況とクリアタイムを記録する非公式ツールです。</p>
 
     <ul class="feat">
-      <li style="--c:var(--lamp-c)"><b>タイムを自動記録</b>クリアするとタイムを自動で記録し、自己ベストを更新すると🎉お祝い🎊します。</li>
+      <li style="--c:var(--lamp-p)"><b>タイムを自動記録</b>クリアするとタイムを自動で記録し、自己ベストを更新すると🎉お祝い🎊します。</li>
       <li style="--c:var(--lamp-c)"><b>クリア状況を確認</b>難易度ごと・作問者ごとに、🌟 パーフェクト／🎯 クリア／未クリアを確認できます。</li>
-      <li style="--c:var(--lamp-c)"><b>問題を選択</b>難易度・作問者・クリア状況で絞り込み、問題を選んでそのままプレイできます。</li>
+      <li style="--c:var(--lamp-p)"><b>問題を選択</b>難易度・作問者・クリア状況で絞り込み、問題を選んでそのままプレイできます。また、クリア済みの問題は盤面をプレビューできます。</li>
+      <li style="--c:var(--lamp-c)"><b>記録を統合</b>エクスポート・インポートで、別の端末の記録をまとめられます。</li>
     </ul>
 
     <h2>画面イメージ</h2>
     <div class="shots">
       <div class="shot-tabs">
-        <button type="button" data-shot="shot-s" aria-pressed="true">クリア状況</button>
-        <button type="button" data-shot="shot-q" aria-pressed="false">問題選択</button>
+        <button type="button" data-shot="shot-s" aria-pressed="true">クリア状況の画面</button>
+        <button type="button" data-shot="shot-q" aria-pressed="false">問題選択の画面</button>
       </div>
       <div class="shot" id="shot-s" aria-hidden="true"></div>
       <div class="shot" id="shot-q" aria-hidden="true" hidden></div>
-      <p class="small">※数値は架空のものです。</p>
+      <p class="small">※内容はダミーのものです。</p>
     </div>
 
     <h2>ブックマークレット</h2>
@@ -833,7 +877,7 @@
     <p class="note">アドレスバーに入力したときは、検索の候補ではなく、<b>☆付きのブックマーク</b>を押してください。</p>
     <p>ブックマークを保存できない、押しても動かないときは、別のブラウザを試してください。</p>
 
-    <h2>使い方</h2>
+    <h2>使い方・仕様</h2>
     <ul>
       <li>Daily Akari を開いた状態で<b>ブックマークレットを実行</b>します。左下に「<b>● 記録中</b>」と出れば準備完了です。</li>
       <li>「<b>● 記録中</b>」を押すと各種機能が使えます。</li>
@@ -898,8 +942,8 @@
       const band = (label, sub, cls, t, p, c, all) => {
         const seg = (k, v) => `<span class="seg ${k}" style="width:${v / t * 100}%">${v / t >= .07 ? v : ''}</span>`;
         return `<div class="band ${cls}${all ? ' all' : ''}">` +
-          `<div class="band-top"><span class="band-name"><b>${label}</b><span>${sub ? sub + '　' : ''}${t} 問</span></span>` +
-          `<span class="band-rate">クリア率 <b>${Math.floor((p + c) * 100 / t)}%</b>　パーフェクト率 <b>${Math.floor(p * 100 / t)}%</b></span></div>` +
+          `<div class="band-top"><span class="band-name"><b>${label}</b><span>${sub ? sub + '　' : ''}(${t} 問)</span></span>` +
+          `<span class="band-rate">クリア <b>${Math.floor((p + c) * 100 / t)}%</b>　パーフェクト <b>${Math.floor(p * 100 / t)}%</b></span></div>` +
           `<div class="bar">${seg('p', p)}${seg('c', c)}${seg('n', t - p - c)}</div></div>`;
       };
       document.getElementById('shot-s').innerHTML = hdr('s') +
@@ -920,6 +964,9 @@
       let cells = '';
       for (let w = LAST_WEEK; w > LAST_WEEK - 13; w--) for (let k = 1; k <= 7; k++) cells += cell(w * 7 + k);
       const sw = (label, on) => `<span class="sw"><i${on ? ' class="on"' : ''}></i>${label}</span>`;
+      // 盤面のプレビューの見本。架空の 11×11 の点対称の盤面で、黒マスの位置は上半分だけ書く
+      const BOARD = [3, 8, 12, 16, 20, 29, 33, 36, 42, 44, 49, 57];
+      const pv = BOARD.flatMap(i => [i, 120 - i]).map(i => `M${i % 11} ${Math.floor(i / 11)}h1v1h-1z`).join('');
       document.getElementById('shot-q').innerHTML = hdr('q') +
         '<div class="flt"><div class="frow top">' + DIFFS.map(([k, , cls]) => `<span class="dbtn d-${cls}">${k}</span>`).join('') +
         '<span class="lbtn">－</span><span class="lbtn">🎯</span><span class="lbtn">🌟</span></div>' +
@@ -928,9 +975,10 @@
         `<div class="cnt">${total(0)} 問</div>` +
         '<div class="week-h">' + [...'月火水木金土日'].map(c => `<span>${c}</span>`).join('') + '</div>' +
         `<div class="grid7">${cells}</div>` +
-        '<div class="sheet"><div class="sheet-top"><div class="meta"><div class="date">26/10/28(水)</div>' +
+        '<div class="sheet"><div class="sheet-top"><div class="meta"><div class="date">26/10/28(水)<span class="size">11×11</span></div>' +
         `<div class="ttl"><span class="no"><small>No.</small>${SEL}</span><span class="dtag d-m">普通</span>` +
         '<span class="auth">作者：サンプル</span></div></div>' +
+        `<svg class="pv" width="72" height="72" viewBox="0 0 11 11"><rect width="11" height="11" fill="#50677c"/><path d="${pv}" fill="#000"/></svg>` +
         '<div class="side"><span class="lamp">🎯</span><b class="best">4:12</b></div></div>' +
         '<div class="play">▶ プレイ</div></div>';
 

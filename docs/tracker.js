@@ -9,7 +9,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.7.2';
+  const VERSION = '0.7.3';
   const APP = 'dailyakari-tracker';
   const SCHEMA = 1;
 
@@ -1021,8 +1021,8 @@
     };
     const rate = v => (t ? `${Math.floor(v * 100 / t)}%` : '－');
     return `<div class="band${all ? ' all' : ''}" style="--c:${color}">` +
-      `<div class="band-top"><span class="band-name"><b>${label}</b><span>${sub ? sub + '　' : ''}${t} 問</span></span>` +
-      `<span class="band-rate">クリア率 <b>${rate(p + c)}</b>　パーフェクト率 <b>${rate(p)}</b></span></div>` +
+      `<div class="band-top"><span class="band-name"><b>${label}</b><span>${sub ? sub + '　' : ''}(${t} 問)</span></span>` +
+      `<span class="band-rate">クリア <b>${rate(p + c)}</b>　パーフェクト <b>${rate(p)}</b></span></div>` +
       `<div class="bar" title="パーフェクト ${p}　クリア ${c}　未クリア ${n}">${seg('p', p)}${seg('c', c)}${seg('n', n)}</div></div>`;
   }
 
@@ -1533,7 +1533,7 @@ ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c
 .lgrp { flex: none; display: flex; gap: 6px; }
 /* 問題選択の 2 段目（並び順・作問者・プレイ不可を表示・曜日ごと）は、入りきらない分を次の行に折り返す */
 .flt.col .frow:last-child { flex-wrap: wrap; }
-.sortb { flex: none; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 12px; white-space: nowrap; }
+.sortb { flex: none; width: 70px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 12px; white-space: nowrap; }
 .author { position: relative; flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; white-space: nowrap; cursor: pointer; }
 .author span { overflow: hidden; text-overflow: ellipsis; }
 .author b { flex: none; font-weight: 400; }
