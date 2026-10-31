@@ -9,7 +9,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.6.3';
+  const VERSION = '0.7.2';
   const APP = 'dailyakari-tracker';
   const SCHEMA = 1;
 
@@ -30,6 +30,7 @@
   const V01_KEY = /^akariTracker(List|Code|Part.*)?$/;
   const DAY0 = Date.UTC(2025, 0, 6);   // No.1 の日付（月曜）
   const LIST_TTL = 12 * 3600 * 1000;    // 一覧の自動更新の間隔
+  const LIST_VER = 3;                   // dat.list の形式。項目を増やしたら上げると、次の起動で全件を取り直す
   const PAGE_INTERVAL = 400;            // 一覧のページを取得する間隔（ミリ秒）
   const AUTHOR_MIN = 8;                 // 作問者フィルタに載せる作問数の下限 N
   const LOG_MAX = 40;
@@ -205,12 +206,13 @@
 
   // dat.list。complete は全ページを取得し終えたかどうか
   function emptyList() {
-    return { fetchedAt: 0, complete: false, items: {} };
+    return { v: LIST_VER, fetchedAt: 0, complete: false, items: {} };
   }
   function loadList() {
     const l = readJSON(KEY.list);
     if (!isObj(l) || !isObj(l.items)) return emptyList();
-    return { fetchedAt: Number(l.fetchedAt) || 0, complete: !!l.complete, items: l.items };
+    // 形式が古ければ、取得が途中のものとして扱って全件を取り直す
+    return { v: LIST_VER, fetchedAt: Number(l.fetchedAt) || 0, complete: !!l.complete && l.v === LIST_VER, items: l.items };
   }
   function saveList() {
     writeJSON(KEY.list, list);
@@ -389,13 +391,36 @@
   };
   function normEntry(e) {
     const v = e.isPlayable;
+    // puzzlink（https://puzz.link/p?akari/幅/高さ/盤面）のうち、幅/高さ/盤面 だけを持つ。末尾に / が付く問題もある
+    const pz = /\?akari\/(\d+\/\d+\/[^/?#]*)\/?$/.exec(String(e.puzzlink));
     return {
       date: e.dateKey == null ? '' : String(e.dateKey),
       d: Number(e.difficulty) || 0,
       author: e.author == null ? '' : String(e.author),
       pid: e.puzzleId == null ? '' : String(e.puzzleId),
       p: v == null || v === true || Number(v) > 0 ? 1 : 0,
+      b: pz ? pz[1] : '',
     };
+  }
+  // 一覧の b（幅/高さ/盤面）から、広さと黒マスの位置を取り出す。数字は読まない。解読できなければ null
+  function parseBoard(s) {
+    const m = /^(\d+)\/(\d+)\/([0-9a-eg-z.]*)$/.exec(s);
+    if (!m) return null;
+    const w = Number(m[1]), h = Number(m[2]);
+    if (!(w > 0 && h > 0 && w * h <= 10000)) return null;
+    const cells = [];
+    let c = 0;
+    for (const ch of m[3]) {
+      const v = parseInt(ch, 36);
+      // g〜z は白マスの連続。それ以外は黒マスで、5〜9 と a〜e は後ろに白マスが 1〜2 個続く
+      if (v >= 16) {
+        c += v - 15;
+        continue;
+      }
+      if (c < w * h) cells.push(c);
+      c += ch === '.' ? 1 : Math.floor(v / 5) + 1;
+    }
+    return { w, h, cells };
   }
 
   // 一覧データの更新。full でなければ、既知の問題しかないページで打ち切る
@@ -450,11 +475,11 @@
         page++;
       }
       // 取得している間に当日の問題などが足されていることがあるので、今の一覧に重ねる
-      list = { fetchedAt: Date.now(), complete: complete || incremental, items: Object.assign({}, list.items, got) };
+      list = { v: LIST_VER, fetchedAt: Date.now(), complete: complete || incremental, items: Object.assign({}, list.items, got) };
       saveList();
     } catch (e) {
       // 途中までの分は残し、次回は全件を取り直す
-      list = { fetchedAt: prev.fetchedAt, complete: false, items: Object.assign({}, list.items, got) };
+      list = { v: LIST_VER, fetchedAt: prev.fetchedAt, complete: false, items: Object.assign({}, list.items, got) };
       saveList();
       throw e;
     } finally {
@@ -472,7 +497,7 @@
     state.daily = { n, day: localDayKey() };
     const e = normEntry(Object.assign({}, res, { isPlayable: 1 }));
     const cur = list.items[n];
-    if (!isObj(cur) || cur.pid !== e.pid || cur.d !== e.d || cur.author !== e.author) {
+    if (!isObj(cur) || cur.pid !== e.pid || cur.d !== e.d || cur.author !== e.author || cur.b !== e.b) {
       list.items[n] = isObj(cur) ? Object.assign({}, cur, e, { p: cur.p }) : e;
       saveList();
     }
@@ -840,6 +865,7 @@
         d: d >= 1 && d <= 6 ? d : 0,
         author: typeof it.author === 'string' ? it.author : '',
         p: it.p ? 1 : 0,
+        b: typeof it.b === 'string' ? it.b : '',
         acc: comp[k] != null ? comp[k] : null,
         best: bestOf(data.attempts[k]),
         last: lastPlayed(data.attempts[k]),
@@ -1079,6 +1105,13 @@
     setHTML(els.grid, h);
   }
 
+  // 盤面のプレビュー。実際の盤面の色の地に黒マスを描くだけで、数字は出さない。長い方の辺を 72px にそろえる
+  function boardSVG(b) {
+    const d = b.cells.map(i => `M${i % b.w} ${Math.floor(i / b.w)}h1v1h-1z`).join('');
+    const s = 72 / Math.max(b.w, b.h);
+    return `<svg class="pv" width="${Math.round(b.w * s)}" height="${Math.round(b.h * s)}" viewBox="0 0 ${b.w} ${b.h}" role="img" aria-label="盤面の形"><rect width="${b.w}" height="${b.h}" fill="#50677c"/><path d="${d}" fill="#000"/></svg>`;
+  }
+
   // 詳細パネル。クリア状況タブの行をタップしたときも同じものを出す
   function renderSheet() {
     const tab = ui.tab, n = tab === 'set' ? 0 : ui.sel[tab];
@@ -1092,14 +1125,18 @@
       const l = lampOf(r.acc);
       // クリア状況は右上に絵文字だけを大きく出す（未クリアは出さない。正確さは表で見る）
       const lamp = l === 'n' ? '' : `<span class="lamp" role="img" aria-label="${LAMPS.find(x => x[0] === l)[3]}">${l === 'p' ? '🌟' : '🎯'}</span>`;
+      // 盤面と広さはクリア済みの問題だけに出す
+      const board = l === 'n' ? null : parseBoard(r.b);
       // クリア済みなら、パネルの輪郭をクリア状況の色にする
       els.sheet.className = `sheet lp-${l}`;
       setHTML(els.sheet,
         `<div class="sheet-top"><div class="meta">` +
-        `<div class="date">${r.date}${today}</div>` +
+        // 広さは日付の行の右端に出す（盤面の左上に来る）
+        `<div class="date">${r.date}${today}${board ? `<span class="size">${board.w}×${board.h}</span>` : ''}</div>` +
         // 難易度は、色を敷いたラベルで番号の横に出し、その右に作問者を続ける
         `<div class="ttl"><span class="no"><small>No.</small>${r.n}</span><span class="tag d-${df.cls}">${df.name}</span>` +
         `<span class="auth">作者：${r.author ? esc(r.author) : '不明'}</span></div></div>` +
+        (board ? boardSVG(board) : '') +
         // 右の領域: クリア状況とベストのタイム（記録がなければ --:--）
         `<div class="side">${lamp || '<span></span>'}` +
         `<b class="best${r.best ? '' : ' none'}" aria-label="ベスト">${r.best ? fmtTime(r.best.ms) : '--:--'}</b></div></div>` +
@@ -1589,19 +1626,23 @@ ${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c
 .sheet.lp-p, .sheet.lp-c { padding-top: 11px; border-width: 2px; }
 .sheet.lp-p { border-color: var(--lamp-p); }
 .sheet.lp-c { border-color: var(--lamp-c); }
-.sheet-top { display: flex; gap: 12px; margin-bottom: 10px; }
+.sheet-top { display: flex; gap: 12px; min-height: 76px; margin-bottom: 10px; }
 .side { flex: none; margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 4px; }
-.meta { flex: 1 1 0; min-width: 0; }
-.meta .date { font-size: 15px; font-variant-numeric: tabular-nums; }
+/* 番号・難易度・作問者は下に寄せ、プレビューやベストと下端をそろえる。大きな数字は行の高さを数字の高さまで詰める */
+.meta { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.meta .date { display: flex; flex-wrap: wrap; font-size: 15px; font-variant-numeric: tabular-nums; }
 .meta .today { margin-left: 10px; color: var(--gold); font-weight: 700; }
-.meta .ttl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 2px; }
-.meta .no { font-size: 40px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta .size { margin-left: auto; padding-left: 8px; white-space: nowrap; }
+.meta .ttl { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px 10px; margin-top: 2px; }
+.meta .no { font-size: 40px; font-weight: 800; line-height: .74; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meta .no small { margin-right: 2px; font-size: 18px; }
 .tag { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 6px; background: var(--c-tint); color: #000; font-size: 14.5px; font-weight: 800; white-space: nowrap; }
 /* 作問者は難易度の右に続ける。入りきらない長さなら次の行に回る */
-.meta .auth { flex: 0 1 auto; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.meta .auth { flex: 0 1 auto; min-width: 0; font-size: 15px; line-height: 1; overflow-wrap: anywhere; }
 .side .lamp { font-size: 30px; line-height: 1; }
-.side .best { font-size: 28px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 盤面のプレビュー。外周の黒マスがパネルの地に溶けないよう、白い細い枠を付ける */
+.pv { flex: none; align-self: flex-end; margin-right: 8px; border: 1px solid #fff; shape-rendering: crispEdges; }
+.side .best { font-size: 28px; font-weight: 800; line-height: .74; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .play { width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 17px; font-weight: 800; }
 .play:disabled { border: 1px dashed #8b949e; background: var(--surface2); color: var(--text); }
 
