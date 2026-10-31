@@ -11,7 +11,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.6.1';
+  const VERSION = '0.6.2';
   const APP = 'dailyakari-tracker';
   const SCHEMA = 1;
 
@@ -39,17 +39,32 @@
   const SPA_NAV = true;                 // プレイボタンでサイト内遷移する（SPEC 6.5。うまくいかなければ false にする）
   const OTHER = '\u0000other';          // 作問者フィルタの「その他」
 
+  // 色（SPEC 5.4）。iPadOS 16.1 以前では CSS の color-mix() が動かないので、混ぜた色はここで計算して CSS に埋め込む
+  const BG = '#0d1117';
+  const WHITE = '#ffffff';
+  const LAMP_P = '#e3b341';
+  const LAMP_C = '#2ea043';
+  const TINT_LAMP = 30;       // 表の行: ランプの色を地の色に混ぜる割合（%）
+  const TINT_DIFF = 55;       // マスとラベルの背景: 難易度の色を白に混ぜる割合（%）
+  const TINT_DIFF_TEXT = 80;  // 表の難易度の文字: 難易度の色を白に混ぜる割合（%）
+  const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const mix = (a, b, pct) => {
+    const to = rgbOf(b);
+    return `rgb(${rgbOf(a).map((v, i) => Math.round((v * pct + to[i] * (100 - pct)) / 100))})`;
+  };
+
+  // 難易度の配色（SPEC 5.4 の仮配色: 水色 / 青 / 紫 / ピンク / 赤 / 白）。VE と E、H と VH の差が出るよう、E は濃い青、VH は朱色寄り
   const DIFFS = [
-    { k: '?', name: '不明', cls: 'x' },
-    { k: 'VE', name: 'とても簡単', cls: 've' },
-    { k: 'E', name: '簡単', cls: 'e' },
-    { k: 'M', name: '普通', cls: 'm' },
-    { k: 'H', name: '難しい', cls: 'h' },
-    { k: 'VH', name: 'とても難しい', cls: 'vh' },
-    { k: 'UH', name: '極めて難しい', cls: 'uh' },
+    { k: '?', name: '不明', cls: 'x', color: '#8b949e' },
+    { k: 'VE', name: 'とても簡単', cls: 've', color: '#4cdbe6' },
+    { k: 'E', name: '簡単', cls: 'e', color: '#3366ff' },
+    { k: 'M', name: '普通', cls: 'm', color: '#a371f7' },
+    { k: 'H', name: '難しい', cls: 'h', color: '#ff6ec7' },
+    { k: 'VH', name: 'とても難しい', cls: 'vh', color: '#ff4520' },
+    { k: 'UH', name: '極めて難しい', cls: 'uh', color: '#f0f3f6' },
   ];
   const diffOf = d => DIFFS[d] || DIFFS[0];
-  const LAMPS = [['n', '－', '#8b949e', '未クリア'], ['c', '🎯', 'var(--lamp-c)', 'クリア'], ['p', '🌟', 'var(--lamp-p)', 'パーフェクト']];
+  const LAMPS = [['n', '－', '#8b949e', '未クリア'], ['c', '🎯', LAMP_C, 'クリア'], ['p', '🌟', LAMP_P, 'パーフェクト']];
   // 表の列: [キー, 見出し, クラス]。画面では「ランプ」を「クリア状況」と書く
   const COLS = [['no', 'No.', ''], ['date', '日付', ''], ['diff', '難易度', 'ct'], ['author', '作問者', ''], ['lamp', 'クリア状況', 'r'], ['best', 'ベスト', 'r'], ['last', '最終プレイ日', '']];
   const SORT_KEYS = {
@@ -944,10 +959,10 @@
     const f = ui.filter;
     let h = '<div class="frow">';
     for (let i = 1; i <= 6; i++) {
-      h += `<button class="dbtn${f.d.includes(i) ? ' on' : ''}" data-act="fd" data-v="${i}" style="--c:var(--d-${DIFFS[i].cls})" aria-pressed="${f.d.includes(i)}">${DIFFS[i].k}</button>`;
+      h += `<button class="dbtn d-${DIFFS[i].cls}${f.d.includes(i) ? ' on' : ''}" data-act="fd" data-v="${i}" aria-pressed="${f.d.includes(i)}">${DIFFS[i].k}</button>`;
     }
     const lamps = '<span class="lgrp">' + LAMPS.map(([k, t, c, label]) =>
-      `<button class="lbtn${f.l.includes(k) ? ' on' : ''}" data-act="fl" data-v="${k}" style="--c:${c}" aria-pressed="${f.l.includes(k)}" aria-label="${label}">${t}</button>`).join('') + '</span>';
+      `<button class="lbtn${f.l.includes(k) ? ' on' : ''}" data-act="fl" data-v="${k}" style="--c:${c};--c-rgb:${rgbOf(c)}" aria-pressed="${f.l.includes(k)}" aria-label="${label}">${t}</button>`).join('') + '</span>';
     if (q2) h += lamps + '</div><div class="frow">' + orderHTML('sortb');
     else h += '</div><div class="frow">' + lamps;
     h += authorHTML(m) + switchHTML('fu', f.u, 'プレイ不可を表示');
@@ -998,7 +1013,7 @@
   function bandsHTML(m) {
     const play = m.rows.filter(r => r.p);
     let h = band('全体', '', 'var(--text)', play, true);
-    for (let i = 1; i <= 6; i++) h += band(DIFFS[i].k, DIFFS[i].name, `var(--d-${DIFFS[i].cls})`, play.filter(r => r.d === i), false);
+    for (let i = 1; i <= 6; i++) h += band(DIFFS[i].k, DIFFS[i].name, DIFFS[i].color, play.filter(r => r.d === i), false);
     return h;
   }
   function band(label, sub, color, items, all) {
@@ -1028,7 +1043,7 @@
   const CELL = {
     no: r => `<td class="no">${r.n}</td>`,
     date: r => `<td>${r.date}</td>`,
-    diff: r => `<td class="df" style="--c:var(--d-${diffOf(r.d).cls})"><span class="dk">${diffOf(r.d).k}</span><span class="dn">${diffOf(r.d).name}</span></td>`,
+    diff: r => `<td class="df d-${diffOf(r.d).cls}"><span class="dk">${diffOf(r.d).k}</span><span class="dn">${diffOf(r.d).name}</span></td>`,
     author: r => `<td title="${esc(r.author)}">${esc(r.author)}</td>`,
     lamp: r => `<td class="r">${lampText(r.acc)}</td>`,
     best: r => `<td class="r">${r.best ? fmtTime(r.best.ms) : ''}</td>`,
@@ -1067,7 +1082,7 @@
   // 問題選択（SPEC 5.7）。曜日ごと: 1 週間 = 1 行（月〜日）。欠番と絞り込みで外れた分は空き枠にし、空の週は詰める。
   // 詰めて表示: 曜日の見出しを消し、表示するマスだけを番号順に並べる
   function cellHTML(r, extra) {
-    return `<div class="cell lp-${lampOf(r.acc)}${r.p ? '' : ' np'}${extra}" data-n="${r.n}" style="--c:var(--d-${diffOf(r.d).cls})">${r.n}</div>`;
+    return `<div class="cell d-${diffOf(r.d).cls} lp-${lampOf(r.acc)}${r.p ? '' : ' np'}${extra}" data-n="${r.n}">${r.n}</div>`;
   }
   function renderGrid(m, vis) {
     const sel = ui.sel.q;
@@ -1120,7 +1135,7 @@
         `<div class="sheet-top"><div class="meta">` +
         `<div class="date">${r.date}${today}</div>` +
         // 難易度は、色を敷いたラベルで番号の横に出し、その右に作問者を続ける
-        `<div class="ttl"><span class="no"><small>No.</small>${r.n}</span><span class="tag" style="--c:var(--d-${df.cls})">${df.name}</span>` +
+        `<div class="ttl"><span class="no"><small>No.</small>${r.n}</span><span class="tag d-${df.cls}">${df.name}</span>` +
         `<span class="auth">作者：${r.author ? esc(r.author) : '不明'}</span></div></div>` +
         // 右の領域: クリア状況とベストのタイム（記録がなければ --:--）
         `<div class="side">${lamp || '<span></span>'}` +
@@ -1436,7 +1451,7 @@
 :host { all: initial; }
 /* DA の CSS がホスト要素に当たっても引き継がれないよう、色や字体は .root で指定し直す */
 .root {
-  --bg: #0d1117;
+  --bg: ${BG};
   --surface: #161b22;
   --surface2: #1f262f;
   --line: #2a313a;
@@ -1444,23 +1459,15 @@
   --accent: #79c0ff;
   --gold: #f2c94c;
   /* ランプ（SPEC 5.4: パーフェクト = 黄、クリア = 緑、未クリア = 暗い灰） */
-  --lamp-p: #e3b341;
-  --lamp-c: #2ea043;
+  --lamp-p: ${LAMP_P};
+  --lamp-c: ${LAMP_C};
   --lamp-n: #2b323b;
+  /* 表の行の背景。ランプを地の色に混ぜて、文字を白にする */
+  --row-p: ${mix(LAMP_P, BG, TINT_LAMP)};
+  --row-c: ${mix(LAMP_C, BG, TINT_LAMP)};
   /* 問題選択のマスの三角だけは、明るい背景の上で目立つよう鮮やかな黄・緑にする */
   --tri-p: #ffd400;
   --tri-c: #00d455;
-  /* 難易度（SPEC 5.4 の仮配色: 水色 / 青 / 紫 / ピンク / 赤 / 白）。VE と E、H と VH の差が出るよう、E は濃い青、VH は朱色寄り */
-  --d-ve: #4cdbe6;
-  --d-e: #3366ff;
-  --d-m: #a371f7;
-  --d-h: #ff6ec7;
-  --d-vh: #ff4520;
-  --d-uh: #f0f3f6;
-  --d-x: #8b949e;
-  /* 背景に敷く色の濃さ（SPEC 5.4）。表の行のランプは地の色に混ぜて文字を白に、問題選択のマスなどの難易度は白に混ぜて文字を黒にする */
-  --tint-lamp: 30%;
-  --tint-diff: 55%;
   color-scheme: dark;   /* select のポップアップなど、ブラウザが描く部品も暗い配色にする */
   color: var(--text);
   font: 13px/1.4 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
@@ -1513,14 +1520,17 @@ button:disabled { cursor: default; }
 .empty { padding: 36px 16px; text-align: center; font-size: 13px; line-height: 1.8; }
 .empty .btn { margin-top: 12px; }
 
+/* 難易度の色（SPEC 5.4）。--c = 元の色、--c-rgb = 透明度を付けるときの値、--c-tint = 白に混ぜた背景の色（文字は黒）、--c-text = 表の文字の色 */
+${DIFFS.map(d => `.d-${d.cls} { --c: ${d.color}; --c-rgb: ${rgbOf(d.color)}; --c-tint: ${mix(d.color, WHITE, TINT_DIFF)}; --c-text: ${mix(d.color, WHITE, TINT_DIFF_TEXT)}; }`).join('\n')}
+
 /* フィルタ */
 .flt { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 7px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .pane > .flt, .pane > .cnt { padding-left: max(8px, calc(50% - 372px)); padding-right: max(8px, calc(50% - 372px)); }
 .frow { display: flex; gap: 6px; align-items: center; min-width: 0; }
-.dbtn { flex: 1; min-width: 0; height: 30px; padding: 0; border-radius: 8px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 8%, transparent); color: var(--c); font-size: 13px; font-weight: 700; }
+.dbtn { flex: 1; min-width: 0; height: 30px; padding: 0; border-radius: 8px; border: 1.5px solid rgba(var(--c-rgb), .55); background: rgba(var(--c-rgb), .08); color: var(--c); font-size: 13px; font-weight: 700; }
 .dbtn.on { background: var(--c); border-color: var(--c); color: #000; }
 .lbtn { flex: none; width: 36px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 14px; }
-.lbtn.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 28%, transparent); box-shadow: inset 0 0 0 1px var(--c); }
+.lbtn.on { border-color: var(--c); background: rgba(var(--c-rgb), .28); box-shadow: inset 0 0 0 1px var(--c); }
 .lgrp { flex: none; display: flex; gap: 6px; }
 /* 問題選択の 2 段目（並び順・作問者・プレイ不可を表示・曜日ごと）は、入りきらない分を次の行に折り返す */
 .flt.col .frow:last-child { flex-wrap: wrap; }
@@ -1590,11 +1600,11 @@ button:disabled { cursor: default; }
 .tbl th:last-child, .tbl td:last-child { padding-right: 10px; }
 .tbl .r { text-align: right; }
 .tbl .ct { text-align: center; }
-.tbl tr.lp-p td { background-color: color-mix(in srgb, var(--lamp-p) var(--tint-lamp), var(--bg)); }
-.tbl tr.lp-c td { background-color: color-mix(in srgb, var(--lamp-c) var(--tint-lamp), var(--bg)); }
+.tbl tr.lp-p td { background-color: var(--row-p); }
+.tbl tr.lp-c td { background-color: var(--row-c); }
 .tbl tr.lp-n td { background-color: var(--surface); }
 .tbl tr td.no { font-weight: 800; }
-.tbl tr td.df { color: color-mix(in srgb, var(--c) 80%, #fff); font-weight: 800; text-align: center; }
+.tbl tr td.df { color: var(--c-text); font-weight: 800; text-align: center; }
 .tbl tr.np td { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 5px, transparent 5px 10px); }
 .tbl tr.sel td { box-shadow: inset 0 2px 0 #fff, inset 0 -2px 0 #fff; }
 .tbl tr.sel td:first-child { box-shadow: inset 2px 0 0 #fff, inset 0 2px 0 #fff, inset 0 -2px 0 #fff; }
@@ -1604,11 +1614,11 @@ button:disabled { cursor: default; }
 .week-h, .grid7 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; max-width: 540px; margin: 0 auto; }
 .week-h { position: sticky; top: 0; z-index: 1; padding: 6px 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 11.5px; font-weight: 700; text-align: center; }
 .grid7 { padding: 8px 10px 16px; }
-.cell { --t: 12px; --tri: none; height: 48px; border-radius: 6px; display: grid; place-items: center; background-color: color-mix(in srgb, var(--c) var(--tint-diff), #fff); background-image: var(--tri); color: #000; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.cell { --t: 12px; --tri: none; height: 48px; border-radius: 6px; display: grid; place-items: center; background-color: var(--c-tint); background-image: var(--tri); color: #000; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; user-select: none; -webkit-user-select: none; }
 /* 三角は斜めの辺だけに細い黒い線を付ける（マスの縁には付けない） */
 .cell.lp-p { --tri: linear-gradient(135deg, var(--tri-p) calc(var(--t) - .5px), #000 var(--t), #000 calc(var(--t) + 1px), transparent calc(var(--t) + 1.5px)); }
 .cell.lp-c { --tri: linear-gradient(135deg, var(--tri-c) calc(var(--t) - .5px), #000 var(--t), #000 calc(var(--t) + 1px), transparent calc(var(--t) + 1.5px)); }
-.cell.np { background-color: transparent; color: var(--text); background-image: var(--tri), repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 30%, transparent) 0 4px, transparent 4px 9px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+.cell.np { background-color: transparent; color: var(--text); background-image: var(--tri), repeating-linear-gradient(135deg, rgba(var(--c-rgb), .3) 0 4px, transparent 4px 9px); box-shadow: inset 0 0 0 1px rgba(var(--c-rgb), .5); }
 .cell.sel { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255,255,255,.16); }
 .slot { height: 48px; border-radius: 6px; background: rgba(255,255,255,.035); }
 
@@ -1625,7 +1635,7 @@ button:disabled { cursor: default; }
 .meta .ttl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 2px; }
 .meta .no { font-size: 40px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meta .no small { margin-right: 2px; font-size: 18px; }
-.tag { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 6px; background: color-mix(in srgb, var(--c) var(--tint-diff), #fff); color: #000; font-size: 14.5px; font-weight: 800; white-space: nowrap; }
+.tag { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 6px; background: var(--c-tint); color: #000; font-size: 14.5px; font-weight: 800; white-space: nowrap; }
 /* 作問者は難易度の右に続ける。入りきらない長さなら次の行に回る */
 .meta .auth { flex: 0 1 auto; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
 .side .lamp { font-size: 30px; line-height: 1; }
